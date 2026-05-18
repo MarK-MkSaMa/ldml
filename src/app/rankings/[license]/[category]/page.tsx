@@ -10,6 +10,7 @@ import { auth } from "@/auth";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
 import { SessionMenu } from "@/components/session-menu";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 
 // 因为顶部 SessionMenu 依赖 cookie（每用户不同），整页需动态渲染
 // 后续若性能成为瓶颈，可只缓存排行数据本身、SessionMenu 走客户端获取
@@ -55,6 +56,8 @@ export default async function RankingPage({
           <SessionMenu />
         </div>
       </header>
+
+      <AnnouncementBanner />
 
       <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         {/* 大类 Tab */}

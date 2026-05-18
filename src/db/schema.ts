@@ -287,7 +287,29 @@ export const commentReports = pgTable(
 );
 
 // ============================================================
-// 13. 关键字黑名单（后台维护）
+// 13. 公告
+// ============================================================
+export const announcements = pgTable(
+  "announcements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    content: text("content").notNull(), // Markdown 原文
+    contentHtml: text("content_html").notNull(), // 渲染并 sanitize 后的 HTML
+    isActive: boolean("is_active").notNull().default(false),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("announcements_active_published_idx").on(t.isActive, t.publishedAt),
+  ],
+);
+
+// ============================================================
+// 14. 关键字黑名单（后台维护）
 // ============================================================
 export const banKeywordActionEnum = ["block", "hide"] as const;
 
@@ -369,6 +391,13 @@ export const commentReactionsRelations = relations(commentReactions, ({ one }) =
   }),
   user: one(users, {
     fields: [commentReactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const announcementsRelations = relations(announcements, ({ one }) => ({
+  author: one(users, {
+    fields: [announcements.createdBy],
     references: [users.id],
   }),
 }));

@@ -34,9 +34,12 @@ export async function SessionMenu() {
       <span className="text-sm">
         {session.user.username}
         {session.user.isAdmin && (
-          <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+          <Link
+            href="/admin"
+            className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
+          >
             管理员
-          </span>
+          </Link>
         )}
       </span>
       <form
