@@ -7,6 +7,7 @@
  * 列头三态排序：默认 → 降序 → 升序 → 回默认
  */
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { DimensionInfo, ModelRow } from "@/lib/rankings";
 
 type SortKey = "name" | "overall" | "votes" | `dim:${number}`;
@@ -21,6 +22,8 @@ export function RankingTable({
   models: ModelRow[];
   showOverall: boolean;
 }) {
+  const router = useRouter();
+
   // null 表示默认排序（页面传入的顺序），不为 null 时按指定列排
   const [sort, setSort] = useState<{ key: SortKey; order: SortOrder } | null>(null);
 
@@ -118,7 +121,17 @@ export function RankingTable({
           {sortedModels.map((m) => (
             <tr
               key={m.id}
-              className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900/40"
+              role="link"
+              tabIndex={0}
+              onClick={() => router.push(`/models/${m.slug}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push(`/models/${m.slug}`);
+                }
+              }}
+              onMouseEnter={() => router.prefetch(`/models/${m.slug}`)}
+              className="cursor-pointer border-b border-zinc-100 transition-colors hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none dark:border-zinc-900 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-900/40"
             >
               <td className="px-3 py-3">
                 <div className="truncate font-medium" title={m.name}>

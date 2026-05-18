@@ -6,6 +6,7 @@
  */
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
 import { SessionMenu } from "@/components/session-menu";
@@ -32,6 +33,16 @@ export default async function RankingPage({
   const { license, category } = await params;
   const data = await getRanking(license, category);
   if (!data) notFound();
+
+  const session = await auth();
+  let hintText: string;
+  if (!session?.user) {
+    hintText = "💡 点击任意一行查看模型详情并评分 · 需先登录 Linux DO";
+  } else if (session.user.trustLevel < 1) {
+    hintText = `💡 点击任意一行查看模型详情 · 你的信任等级 ${session.user.trustLevel} 暂不能评分（需达到 1 级）`;
+  } else {
+    hintText = "💡 点击任意一行进入模型详情并对各维度评分";
+  }
 
   return (
     <main className="flex flex-1 flex-col">
@@ -85,6 +96,11 @@ export default async function RankingPage({
             );
           })}
         </nav>
+
+        {/* 引导条 */}
+        <div className="mb-6 rounded-md border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+          {hintText}
+        </div>
 
         {/* 观察区 */}
         {data.observing.length > 0 && (
