@@ -8,9 +8,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
+import { SessionMenu } from "@/components/session-menu";
 
-// 每 60 秒重新生成（ISR），降低数据库压力
-export const revalidate = 60;
+// 因为顶部 SessionMenu 依赖 cookie（每用户不同），整页需动态渲染
+// 后续若性能成为瓶颈，可只缓存排行数据本身、SessionMenu 走客户端获取
+export const dynamic = "force-dynamic";
 
 const LICENSE_TABS = [
   { slug: "closed-source", name: "非开源" },
@@ -39,7 +41,7 @@ export default async function RankingPage({
           <Link href="/" className="text-lg font-semibold">
             LDML 大模型排行榜
           </Link>
-          <span className="text-sm text-zinc-500">登录（待实现）</span>
+          <SessionMenu />
         </div>
       </header>
 
