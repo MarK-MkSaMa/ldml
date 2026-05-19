@@ -10,6 +10,7 @@ import { auth } from "@/auth";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 
 // 因为顶部 SessionMenu 依赖 cookie（每用户不同），整页需动态渲染
@@ -124,9 +125,7 @@ export default async function RankingPage({
         )}
       </div>
 
-      <footer className="border-t border-zinc-200 px-6 py-4 text-center text-xs text-zinc-500 dark:border-zinc-800">
-        🚧 站点建设中 · 数据来自 Linux DO 社区用户投票
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

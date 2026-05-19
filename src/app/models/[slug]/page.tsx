@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { getModelBySlug } from "@/lib/models";
 import { getUserVotesForModel } from "@/lib/votes";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { RatingPanel } from "./rating-panel";
 
 export const dynamic = "force-dynamic";
@@ -144,9 +145,7 @@ export default async function ModelDetailPage({
         </section>
       </div>
 
-      <footer className="border-t border-zinc-200 px-6 py-4 text-center text-xs text-zinc-500 dark:border-zinc-800">
-        🚧 站点建设中
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

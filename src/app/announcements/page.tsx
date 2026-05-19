@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { listActiveAnnouncements } from "@/lib/announcements";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +56,7 @@ export default async function AnnouncementsPage() {
         )}
       </div>
 
-      <footer className="border-t border-zinc-200 px-6 py-4 text-center text-xs text-zinc-500 dark:border-zinc-800">
-        🚧 站点建设中
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
