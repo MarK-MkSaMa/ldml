@@ -85,8 +85,10 @@ export const dimensions = pgTable(
 // ============================================================
 // 5. 模型
 // ============================================================
-export const modelStatusEnum = ["draft", "observing", "listed", "archived"] as const;
-export type ModelStatus = (typeof modelStatusEnum)[number];
+import { MODEL_STATUSES } from "@/lib/model-status";
+export { MODEL_STATUSES as modelStatusEnum };
+export type { ModelStatus } from "@/lib/model-status";
+const modelStatusEnum = MODEL_STATUSES;
 
 export const models = pgTable(
   "models",

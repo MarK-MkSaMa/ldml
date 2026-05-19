@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getModelBySlug } from "@/lib/models";
 import { getUserVotesForModel } from "@/lib/votes";
-import { SessionMenu } from "@/components/session-menu";
+import { SiteHeader } from "@/components/site-header";
 import { RatingPanel } from "./rating-panel";
 
 export const dynamic = "force-dynamic";
@@ -45,14 +45,7 @@ export default async function ModelDetailPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-semibold">
-            LDML 大模型排行榜
-          </Link>
-          <SessionMenu />
-        </div>
-      </header>
+      <SiteHeader maxWidth="max-w-4xl" />
 
       <div className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
         {/* 面包屑 */}

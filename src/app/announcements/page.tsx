@@ -3,7 +3,7 @@
  */
 import Link from "next/link";
 import { listActiveAnnouncements } from "@/lib/announcements";
-import { SessionMenu } from "@/components/session-menu";
+import { SiteHeader } from "@/components/site-header";
 
 export const dynamic = "force-dynamic";
 
@@ -12,14 +12,7 @@ export default async function AnnouncementsPage() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-semibold">
-            LDML 大模型排行榜
-          </Link>
-          <SessionMenu />
-        </div>
-      </header>
+      <SiteHeader maxWidth="max-w-3xl" />
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
         <nav className="mb-4 text-sm text-zinc-500">
