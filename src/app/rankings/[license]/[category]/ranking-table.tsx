@@ -66,8 +66,41 @@ export function RankingTable({
     (showOverall ? overallColWidth : 0) +
     votesColWidth;
 
+  // 给移动端的排序选项列表（不含 name，因为按名字排在卡片视图意义不大）
+  const sortOptions: { key: SortKey; label: string }[] = [
+    ...(showOverall ? [{ key: "overall" as SortKey, label: "综合分" }] : []),
+    { key: "votes", label: "票数" },
+    ...dimensions.map((d) => ({
+      key: `dim:${d.id}` as SortKey,
+      label: d.name,
+    })),
+  ];
+
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* 移动端：排序条 + 卡片列表 */}
+      <div className="md:hidden">
+        <MobileSortBar
+          options={sortOptions}
+          sort={sort}
+          onChange={setSort}
+        />
+        <ul className="space-y-3">
+          {sortedModels.map((m) => (
+            <MobileCard
+              key={m.id}
+              model={m}
+              dimensions={dimensions}
+              showOverall={showOverall}
+              onOpen={() => router.push(`/models/${m.slug}`)}
+              onPrefetch={() => router.prefetch(`/models/${m.slug}`)}
+            />
+          ))}
+        </ul>
+      </div>
+
+      {/* 桌面：表格 */}
+      <div className="hidden overflow-x-auto md:block">
       <table
         className="w-full table-fixed border-collapse text-sm"
         style={{ minWidth: `${minTableWidth}px` }}
@@ -163,7 +196,140 @@ export function RankingTable({
           ))}
         </tbody>
       </table>
+      </div>
+    </>
+  );
+}
+
+/**
+ * 移动端排序条：当前排序键 + 升降序切换
+ */
+function MobileSortBar({
+  options,
+  sort,
+  onChange,
+}: {
+  options: { key: SortKey; label: string }[];
+  sort: { key: SortKey; order: SortOrder } | null;
+  onChange: (s: { key: SortKey; order: SortOrder } | null) => void;
+}) {
+  const currentKey = sort?.key ?? "overall";
+  const currentOrder = sort?.order ?? "desc";
+
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <span className="text-xs text-zinc-500">按</span>
+      <select
+        value={currentKey}
+        onChange={(e) => {
+          const key = e.target.value as SortKey;
+          onChange({ key, order: currentOrder });
+        }}
+        className="flex-1 rounded border border-zinc-200 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+      >
+        {options.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() =>
+          onChange({
+            key: currentKey,
+            order: currentOrder === "desc" ? "asc" : "desc",
+          })
+        }
+        className="rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        title={currentOrder === "desc" ? "降序" : "升序"}
+      >
+        {currentOrder === "desc" ? "↓" : "↑"}
+      </button>
     </div>
+  );
+}
+
+/**
+ * 移动端单张模型卡
+ */
+function MobileCard({
+  model: m,
+  dimensions,
+  showOverall,
+  onOpen,
+  onPrefetch,
+}: {
+  model: ModelRow;
+  dimensions: DimensionInfo[];
+  showOverall: boolean;
+  onOpen: () => void;
+  onPrefetch: () => void;
+}) {
+  return (
+    <li
+      role="link"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      onTouchStart={onPrefetch}
+      className="cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 transition-colors focus:bg-zinc-50 focus:outline-none active:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:bg-zinc-800 dark:active:bg-zinc-800"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate font-medium" title={m.name}>
+            {m.name}
+          </div>
+          {m.vendor && (
+            <div className="truncate text-xs text-zinc-500">{m.vendor}</div>
+          )}
+        </div>
+        {showOverall && m.overall !== null && (
+          <div className="shrink-0 text-right">
+            <div className="text-2xl font-bold tabular-nums">
+              {m.overall.toFixed(1)}
+            </div>
+            <div className="text-[10px] uppercase text-zinc-500">综合</div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+        {dimensions.map((d) => {
+          const s = m.scores[d.id];
+          const avg = s?.avg ?? null;
+          // 进度条宽度：分数 1-10 映射到 0-100%
+          const pct = avg === null ? 0 : Math.max(0, Math.min(100, (avg / 10) * 100));
+          return (
+            <div key={d.id} className="text-xs">
+              <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                <span className="truncate" title={d.description ?? undefined}>
+                  {d.name}
+                </span>
+                <span className="ml-2 shrink-0 tabular-nums text-zinc-900 dark:text-zinc-100">
+                  {avg !== null ? avg.toFixed(1) : "—"}
+                </span>
+              </div>
+              <div className="mt-1 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <div
+                  className="h-full bg-zinc-900 dark:bg-zinc-100"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 text-right text-xs text-zinc-500 tabular-nums">
+        {m.totalVotes.toLocaleString()} 票
+      </div>
+    </li>
   );
 }
 

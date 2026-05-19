@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
+import { ObservingSection } from "./observing-section";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -101,16 +102,10 @@ export default async function RankingPage({
 
         {/* 观察区 */}
         {data.observing.length > 0 && (
-          <section className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-            <h2 className="mb-3 text-sm font-semibold text-amber-900 dark:text-amber-200">
-              🆕 观察区（{data.observing.length} 个新模型，暂不计入排行）
-            </h2>
-            <RankingTable
-              dimensions={data.dimensions}
-              models={data.observing}
-              showOverall={false}
-            />
-          </section>
+          <ObservingSection
+            dimensions={data.dimensions}
+            models={data.observing}
+          />
         )}
 
         {/* 正式榜 */}

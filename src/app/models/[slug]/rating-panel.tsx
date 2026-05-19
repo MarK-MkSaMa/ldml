@@ -6,7 +6,7 @@
  * 每个维度一行：维度名 + 1-10 按钮组 + 撤回按钮
  * 点击按钮立即 POST，乐观更新本地状态。
  */
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 export type RatingDimension = {
@@ -14,6 +14,24 @@ export type RatingDimension = {
   slug: string;
   name: string;
   description: string | null;
+};
+
+/**
+ * 分数刻度参考
+ * 主要锚点：1 / 3 / 5 / 7 / 9 / 10
+ * 中间档（2 / 4 / 6 / 8）作为相邻档位的过渡
+ */
+const SCORE_HINTS: Record<number, string> = {
+  1: "完全无法使用 / 错得离谱",
+  2: "勉强能动，但远不如同类",
+  3: "能用，但明显比同类差",
+  4: "略低于平均水平",
+  5: "合格，与同类相当",
+  6: "稍优于同类",
+  7: "明显优于同类，比较推荐",
+  8: "很好用，遇到具体问题再考虑别的",
+  9: "该维度的标杆级表现",
+  10: "全网最佳，几乎无人能及",
 };
 
 export function RatingPanel({
@@ -104,6 +122,9 @@ export function RatingPanel({
         </div>
       )}
 
+      {/* 评分刻度参考（默认折叠） */}
+      <ScoreGuide />
+
       {error && (
         <div className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -135,6 +156,7 @@ export function RatingPanel({
                     type="button"
                     disabled={!canVote || pending}
                     onClick={() => submit(d.id, n)}
+                    title={`${n} 分 · ${SCORE_HINTS[n]}`}
                     className={`h-8 w-8 rounded-md border text-sm tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
                         ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
@@ -157,6 +179,65 @@ export function RatingPanel({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * 评分刻度参考（折叠面板）
+ *
+ * 默认展开，方便首次访问的用户看到刻度说明。
+ * 用户主动操作后用 localStorage 记住偏好；后续访问保持上次状态。
+ */
+const SCORE_GUIDE_KEY = "score_guide_open";
+
+function ScoreGuide() {
+  // 服务端渲染时统一为 true（默认展开），客户端 mount 后再读 localStorage
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    const v = localStorage.getItem(SCORE_GUIDE_KEY);
+    if (v === "0") setOpen(false);
+  }, []);
+
+  function toggle() {
+    setOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem(SCORE_GUIDE_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
+
+  return (
+    <div className="rounded-md border border-zinc-200 bg-zinc-50 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex w-full items-center justify-between px-4 py-2 text-left text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+      >
+        <span>
+          💡 评分参考：
+          <span className="text-zinc-500">每个分数都有含义，鼠标悬停按钮可看说明</span>
+        </span>
+        <span className="text-xs text-zinc-500">
+          {open ? "收起 ▲" : "展开 ▼"}
+        </span>
+      </button>
+      {open && (
+        <ul className="border-t border-zinc-200 px-4 py-3 text-xs dark:border-zinc-800">
+          {Object.entries(SCORE_HINTS).map(([n, hint]) => (
+            <li
+              key={n}
+              className="flex gap-3 py-0.5"
+            >
+              <span className="inline-flex h-5 w-6 shrink-0 items-center justify-center rounded bg-zinc-200 font-mono text-[11px] dark:bg-zinc-800">
+                {n}
+              </span>
+              <span className="text-zinc-600 dark:text-zinc-400">{hint}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
