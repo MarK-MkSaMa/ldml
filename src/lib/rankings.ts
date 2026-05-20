@@ -3,6 +3,7 @@
  *
  * 提供按 (license, category) 查询正式榜 / 观察区模型 + 各维度评分的函数
  */
+import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import {
   licenses,
@@ -11,7 +12,7 @@ import {
   models,
   modelStats,
 } from "@/db/schema";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq, asc, inArray } from "drizzle-orm";
 
 export type DimensionInfo = {
   id: number;
@@ -51,37 +52,44 @@ export type RankingData = {
  * 加载某 (license, category) 下的排行榜数据
  * 返回 null 表示 license 或 category slug 不存在
  */
-export async function getRanking(
+async function getRankingUncached(
   licenseSlug: string,
   categorySlug: string,
 ): Promise<RankingData | null> {
-  // 1. 查 license + category
-  const [lic] = await db.select().from(licenses).where(eq(licenses.slug, licenseSlug));
-  const [cat] = await db.select().from(categories).where(eq(categories.slug, categorySlug));
+  // 阶段 1：并发查 license + category（两条 SQL 同时发）
+  const [licRows, catRows] = await Promise.all([
+    db.select().from(licenses).where(eq(licenses.slug, licenseSlug)),
+    db.select().from(categories).where(eq(categories.slug, categorySlug)),
+  ]);
+  const lic = licRows[0];
+  const cat = catRows[0];
   if (!lic || !cat) return null;
 
-  // 2. 查该 category 的维度
-  const dims = await db
-    .select()
-    .from(dimensions)
-    .where(eq(dimensions.categoryId, cat.id))
-    .orderBy(asc(dimensions.order));
+  // 阶段 2：并发查 dimensions + models（依赖阶段 1 的 ids）
+  const [dims, modelRows] = await Promise.all([
+    db
+      .select()
+      .from(dimensions)
+      .where(eq(dimensions.categoryId, cat.id))
+      .orderBy(asc(dimensions.order)),
+    db
+      .select()
+      .from(models)
+      .where(and(eq(models.licenseId, lic.id), eq(models.categoryId, cat.id))),
+  ]);
 
-  // 3. 查该 (license, category) 下所有非草稿、非归档的模型
-  const modelRows = await db
-    .select()
-    .from(models)
-    .where(and(eq(models.licenseId, lic.id), eq(models.categoryId, cat.id)));
-
-  // 4. 查所有相关 model_stats
+  // 阶段 3：查相关 model_stats（用 IN 过滤，DB 端就筛好，不再拉全表）
   const modelIds = modelRows.map((m) => m.id);
   const stats =
     modelIds.length === 0
       ? []
-      : await db.select().from(modelStats); // 数据量小，全表回拉再筛
+      : await db
+          .select()
+          .from(modelStats)
+          .where(inArray(modelStats.modelId, modelIds));
+
   const statsByModel = new Map<string, typeof stats>();
   for (const s of stats) {
-    if (!modelIds.includes(s.modelId)) continue;
     const arr = statsByModel.get(s.modelId) ?? [];
     arr.push(s);
     statsByModel.set(s.modelId, arr);
@@ -142,6 +150,18 @@ export async function getRanking(
     observing,
   };
 }
+
+/**
+ * 缓存版排行榜查询
+ *
+ * - 缓存 60 秒，第一个用户付出真实查询代价，后 60 秒内秒回
+ * - tag "rankings"：投票成功 / 模型变更 / 维度变更时调用 revalidateTag("rankings") 立即失效
+ */
+export const getRanking = unstable_cache(
+  getRankingUncached,
+  ["rankings"],
+  { revalidate: 60, tags: ["rankings"] },
+);
 
 /**
  * 用于生成静态路径 —— 列出所有 (license, category) 组合

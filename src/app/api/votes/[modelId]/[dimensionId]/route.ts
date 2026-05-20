@@ -4,6 +4,7 @@
  * 撤回某个维度的评分
  */
 import { NextResponse } from "next/server";
+import { updateTag } from "next/cache";
 import { auth } from "@/auth";
 import { withdrawVote } from "@/lib/votes";
 
@@ -32,5 +33,6 @@ export async function DELETE(
     modelId,
     dimId,
   );
+  if (removed) updateTag("rankings");
   return NextResponse.json({ ok: true, removed });
 }

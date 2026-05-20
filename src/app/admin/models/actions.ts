@@ -3,7 +3,7 @@
 /**
  * 模型管理 Server Actions
  */
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
@@ -51,6 +51,7 @@ function bust() {
   // 写完同时让前台 / 后台缓存失效
   revalidatePath("/admin/models");
   revalidatePath("/", "layout");
+  updateTag("rankings");
 }
 
 export async function createModelAction(formData: FormData) {
