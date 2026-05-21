@@ -28,6 +28,16 @@ export default async function AdminHome() {
         <StatCard label="公告数" value={stats.announcementCount} />
       </div>
 
+      {/* 待处理事项（仅在有积压时显示） */}
+      {stats.pendingReportCount > 0 && (
+        <Link
+          href="/admin/reports"
+          className="block rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
+        >
+          ⚠ 有 <strong>{stats.pendingReportCount}</strong> 条待处理举报 →
+        </Link>
+      )}
+
       {/* 模型按状态分布 */}
       <section>
         <h2 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">

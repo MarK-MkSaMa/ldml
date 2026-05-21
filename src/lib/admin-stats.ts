@@ -7,14 +7,17 @@ import {
   models,
   votes,
   announcements,
+  commentReports,
 } from "@/db/schema";
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
 export type DashboardStats = {
   userCount: number;
   modelCount: number;
   voteCount: number;
   announcementCount: number;
+  // 待处理举报数（提醒管理员）
+  pendingReportCount: number;
   // 简单分布
   modelByStatus: { status: string; count: number }[];
   // 最近 5 条公告（含草稿）
@@ -33,6 +36,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     [{ value: modelCount }],
     [{ value: voteCount }],
     [{ value: announcementCount }],
+    [{ value: pendingReportCount }],
     statusRows,
     recent,
   ] = await Promise.all([
@@ -40,6 +44,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     db.select({ value: count() }).from(models),
     db.select({ value: count() }).from(votes),
     db.select({ value: count() }).from(announcements),
+    db
+      .select({ value: count() })
+      .from(commentReports)
+      .where(eq(commentReports.status, "pending")),
     // 按状态分组
     db
       .select({ status: models.status, value: count() })
@@ -59,13 +67,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   ]);
 
   // 抑制 unused
-  void eq;
+  void and;
 
   return {
     userCount,
     modelCount,
     voteCount,
     announcementCount,
+    pendingReportCount,
     modelByStatus: statusRows.map((r) => ({
       status: r.status,
       count: r.value,
