@@ -16,6 +16,7 @@ const ITEMS = [
   { href: "/admin/comments", label: "评论审核" },
   { href: "/admin/reports", label: "举报队列" },
   { href: "/admin/keywords", label: "关键字黑名单" },
+  { href: "/admin/abuse", label: "评分异常检测" },
 ];
 
 export function AdminNav() {
