@@ -193,10 +193,8 @@ function CommentItem({
     setDislikeCount(c.dislikeCount);
   }, [c.myReaction, c.likeCount, c.dislikeCount]);
 
-  // 隐藏 / 删除占位
-  if (c.isDeleted) {
-    return <div className="text-sm italic text-zinc-400">[该评论已被删除]</div>;
-  }
+  // 已删除评论在服务层就过滤掉了，前端不会拿到
+  // 仅处理"被隐藏"的情况
   if (c.isHidden) {
     return <div className="text-sm italic text-zinc-400">[该评论已被隐藏]</div>;
   }

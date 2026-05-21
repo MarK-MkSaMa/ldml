@@ -22,26 +22,30 @@ export async function SessionMenu() {
 
   return (
     <div className="flex items-center gap-3">
-      {session.user.image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={session.user.image}
-          alt=""
-          className="h-7 w-7 rounded-full"
-          referrerPolicy="no-referrer"
-        />
-      )}
-      <span className="text-sm">
-        {session.user.username}
-        {session.user.isAdmin && (
-          <Link
-            href="/admin"
-            className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
-          >
-            管理员
-          </Link>
+      <Link
+        href="/profile"
+        className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        title="个人中心"
+      >
+        {session.user.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={session.user.image}
+            alt=""
+            className="h-7 w-7 rounded-full"
+            referrerPolicy="no-referrer"
+          />
         )}
-      </span>
+        <span>{session.user.username}</span>
+      </Link>
+      {session.user.isAdmin && (
+        <Link
+          href="/admin"
+          className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
+        >
+          管理员
+        </Link>
+      )}
       <form
         action={async () => {
           "use server";

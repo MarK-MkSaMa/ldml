@@ -387,7 +387,8 @@ export type CommentNode = {
  * 查询某模型的评论树
  * - 顶级评论按 sort 排序
  * - 回复内嵌在顶级下，按时间正序
- * - 隐藏 / 删除的评论占位但内容置空，前端决定显示样式
+ * - 已删除的评论从结果中过滤
+ * - 隐藏的评论保留占位（内容置空），可被作者/管理员处理
  */
 export async function listCommentsForModel(
   modelId: string,
@@ -396,6 +397,7 @@ export async function listCommentsForModel(
   const sort = opts.sort ?? "hot";
 
   // 一次查出该 model 的所有评论 + 作者基本信息
+  // 已删除的评论直接过滤掉
   const rows = await db
     .select({
       c: comments,
@@ -408,7 +410,7 @@ export async function listCommentsForModel(
     })
     .from(comments)
     .leftJoin(users, eq(users.id, comments.userId))
-    .where(eq(comments.modelId, modelId))
+    .where(and(eq(comments.modelId, modelId), eq(comments.isDeleted, false)))
     .orderBy(asc(comments.createdAt));
 
   // 当前用户的反应
