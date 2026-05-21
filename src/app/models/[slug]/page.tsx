@@ -7,18 +7,23 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getModelBySlug } from "@/lib/models";
 import { getUserVotesForModel } from "@/lib/votes";
+import { listCommentsForModel, type CommentSort } from "@/lib/comments";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { RatingPanel } from "./rating-panel";
+import { CommentsSection } from "./comments-section";
 
 export const dynamic = "force-dynamic";
 
 export default async function ModelDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ sort?: string }>;
 }) {
   const { slug } = await params;
+  const sp = await searchParams;
   const model = await getModelBySlug(slug);
   if (!model) notFound();
 
@@ -33,6 +38,20 @@ export default async function ModelDetailPage({
     notVotableReason = "登录后即可对各维度评分";
   } else if (session.user.trustLevel < 1) {
     notVotableReason = `你的 Linux DO 信任等级为 ${session.user.trustLevel}，需要达到 1 级才能投票`;
+  }
+
+  // 评论数据 + 当前用户评论权限
+  const commentSort: CommentSort = sp.sort === "latest" ? "latest" : "hot";
+  const comments = await listCommentsForModel(model.id, {
+    sort: commentSort,
+    viewerId: session?.user?.id,
+  });
+  const canComment = !!session?.user && session.user.trustLevel >= 1;
+  let notCommentableReason: string | undefined;
+  if (!session?.user) {
+    notCommentableReason = "登录后即可发表评论";
+  } else if (session.user.trustLevel < 1) {
+    notCommentableReason = `你的 Linux DO 信任等级为 ${session.user.trustLevel}，需要达到 1 级才能评论`;
   }
 
   // 综合分
@@ -141,6 +160,22 @@ export default async function ModelDetailPage({
             initialMyVotes={myVotes}
             canVote={canVote}
             notVotableReason={notVotableReason}
+          />
+        </section>
+
+        {/* 评论 */}
+        <section className="mt-12">
+          <CommentsSection
+            modelId={model.id}
+            initialComments={comments}
+            initialSort={commentSort}
+            viewer={{
+              isLoggedIn: !!session?.user,
+              userId: session?.user?.id,
+              isAdmin: !!session?.user?.isAdmin,
+              canComment,
+              notCommentableReason,
+            }}
           />
         </section>
       </div>
