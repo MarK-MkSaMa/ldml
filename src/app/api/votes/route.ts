@@ -12,6 +12,7 @@ import { updateTag } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { castVote, VoteError } from "@/lib/votes";
+import { maybePromoteModel } from "@/lib/promotion";
 
 const bodySchema = z.object({
   modelId: z.string().uuid(),
@@ -51,6 +52,11 @@ export async function POST(req: Request) {
       parsed.data.modelId,
       parsed.data.dimensionId,
       parsed.data.score,
+    );
+    // 被动晋升检查：如果该模型够格，转 listed
+    // 失败不阻塞主流程
+    maybePromoteModel(parsed.data.modelId).catch((e) =>
+      console.error("[promotion]", e),
     );
     // 让榜单缓存立即失效，下次访问拉到新分数
     updateTag("rankings");

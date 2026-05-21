@@ -10,6 +10,7 @@ import { listModelsForAdmin } from "@/lib/admin-models";
 import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
 import { ModelRowActions } from "./row-actions";
+import { PromoteButton } from "./promote-button";
 import { asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -62,12 +63,15 @@ export default async function AdminModelsPage({
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">模型管理</h1>
-        <Link
-          href="/admin/models/new"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          + 新建模型
-        </Link>
+        <div className="flex items-center gap-3">
+          <PromoteButton />
+          <Link
+            href="/admin/models/new"
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            + 新建模型
+          </Link>
+        </div>
       </div>
 
       {/* 筛选条 */}

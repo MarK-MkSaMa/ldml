@@ -13,6 +13,7 @@ import {
   setModelStatusAdmin,
   setModelPinnedAdmin,
 } from "@/lib/admin-models";
+import { promoteEligibleModels } from "@/lib/promotion";
 import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
 
@@ -87,4 +88,17 @@ export async function deleteModelAction(id: string) {
   await requireAdmin();
   await deleteModelAdmin(id);
   bust();
+}
+
+/**
+ * 立即检查所有观察区模型，把符合条件的转为正式榜
+ */
+export async function promoteEligibleAction(): Promise<{
+  checked: number;
+  promoted: number;
+}> {
+  await requireAdmin();
+  const result = await promoteEligibleModels();
+  if (result.promoted > 0) bust();
+  return result;
 }
