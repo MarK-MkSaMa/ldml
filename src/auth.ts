@@ -83,7 +83,7 @@ const config: NextAuthConfig = {
       const trustLevel = (user as { trustLevel?: number }).trustLevel ?? 0;
       if (!linuxdoId || !username) return false;
 
-      const isAdmin = env.ADMIN_LINUXDO_IDS.includes(String(linuxdoId));
+      const isInAdminEnv = env.ADMIN_LINUXDO_IDS.includes(String(linuxdoId));
 
       // upsert 基于 linuxdoId 唯一索引
       const [existing] = await db
@@ -93,6 +93,10 @@ const config: NextAuthConfig = {
 
       if (existing) {
         if (existing.isBanned) return false; // 被封禁用户拒绝登录
+        // is_admin 规则：
+        //   1. ADMIN_LINUXDO_IDS 里的用户始终保留管理员（防止误降级把自己锁外）
+        //   2. 否则保留数据库当前值（允许后台手动调整）
+        const nextIsAdmin = isInAdminEnv ? true : existing.isAdmin;
         await db
           .update(users)
           .set({
@@ -100,8 +104,7 @@ const config: NextAuthConfig = {
             displayName: user.name ?? username,
             avatarUrl: user.image ?? null,
             trustLevel,
-            // 管理员状态由配置决定（一旦在 ADMIN_LINUXDO_IDS 移除，下次登录自动失去）
-            isAdmin,
+            isAdmin: nextIsAdmin,
             lastLoginAt: new Date(),
           })
           .where(eq(users.id, existing.id));
@@ -112,7 +115,8 @@ const config: NextAuthConfig = {
           displayName: user.name ?? username,
           avatarUrl: user.image ?? null,
           trustLevel,
-          isAdmin,
+          // 新用户首次登录：只有 env 列表里的才直接成为管理员
+          isAdmin: isInAdminEnv,
           lastLoginAt: new Date(),
         });
       }

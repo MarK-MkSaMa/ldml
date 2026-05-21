@@ -12,6 +12,7 @@ const ITEMS = [
   { href: "/admin/announcements", label: "公告管理" },
   { href: "/admin/models", label: "模型管理" },
   { href: "/admin/dimensions", label: "维度管理" },
+  { href: "/admin/users", label: "用户管理" },
   { href: "/admin/comments", label: "评论审核" },
   { href: "/admin/reports", label: "举报队列" },
   { href: "/admin/keywords", label: "关键字黑名单" },
