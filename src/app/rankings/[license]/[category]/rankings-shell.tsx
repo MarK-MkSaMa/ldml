@@ -19,21 +19,20 @@ const LICENSE_TABS = [
   { slug: "closed-source", name: "非开源" },
   { slug: "open-source", name: "开源" },
 ];
-const CATEGORY_TABS = [
-  { slug: "text", name: "文字" },
-  { slug: "image", name: "生图" },
-  { slug: "video", name: "生视频" },
-];
+
+export type CategoryTab = { slug: string; name: string };
 
 export function RankingsShell({
   license,
   category,
   hintText,
+  categoryTabs,
   children,
 }: {
   license: string;
   category: string;
   hintText: string;
+  categoryTabs: CategoryTab[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -85,7 +84,7 @@ export function RankingsShell({
 
       {/* 分类 Tab */}
       <nav className="mb-8 flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
-        {CATEGORY_TABS.map((tab) => {
+        {categoryTabs.map((tab) => {
           const active = tab.slug === displayCategory;
           return (
             <button

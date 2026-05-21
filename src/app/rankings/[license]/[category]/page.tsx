@@ -5,7 +5,10 @@
  *   category: text | image | video
  */
 import { notFound } from "next/navigation";
+import { asc } from "drizzle-orm";
 import { auth } from "@/auth";
+import { db } from "@/db";
+import { categories } from "@/db/schema";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
 import { ObservingSection } from "./observing-section";
@@ -24,7 +27,13 @@ export default async function RankingPage({
   params: Promise<{ license: string; category: string }>;
 }) {
   const { license, category } = await params;
-  const data = await getRanking(license, category);
+  const [data, categoryTabs] = await Promise.all([
+    getRanking(license, category),
+    db
+      .select({ slug: categories.slug, name: categories.name })
+      .from(categories)
+      .orderBy(asc(categories.order)),
+  ]);
   if (!data) notFound();
 
   const session = await auth();
@@ -49,6 +58,7 @@ export default async function RankingPage({
           license={license}
           category={category}
           hintText={hintText}
+          categoryTabs={categoryTabs}
         >
           {/* 观察区 */}
           {data.observing.length > 0 && (
