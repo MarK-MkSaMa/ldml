@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * 排行榜表格（客户端组件，处理列头点击排序）
+ * 排行榜表格（客户端组件，处理列头点击排序 + 自定义维度权重）
  *
  * 默认按综合分降序。
  * 列头三态排序：默认 → 降序 → 升序 → 回默认
+ * 自定义权重：点"📊 偏好"打开面板，调整各维度权重；综合分实时按权重重算
+ *   - 权重存 localStorage，键 = 分类下所有 dimensionId 的稳定排序
+ *   - 默认全部权重 = 1（等权，与服务端一致）
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DimensionInfo, ModelRow } from "@/lib/rankings";
 
@@ -17,15 +20,109 @@ export function RankingTable({
   dimensions,
   models,
   showOverall,
+  storageKey,
 }: {
   dimensions: DimensionInfo[];
   models: ModelRow[];
   showOverall: boolean;
+  /** 用于 localStorage 命名空间，例如 "text" / "image" / "video" */
+  storageKey?: string;
 }) {
   const router = useRouter();
 
   // null 表示默认排序（页面传入的顺序），不为 null 时按指定列排
   const [sort, setSort] = useState<{ key: SortKey; order: SortOrder } | null>(null);
+
+  // 自定义权重：dimensionId -> 0..5（0 表示不参与综合分）
+  const [weights, setWeights] = useState<Record<number, number>>({});
+  const [prefsOpen, setPrefsOpen] = useState(false);
+
+  // 客户端 mount 后读 localStorage（避免 SSR 不一致）
+  const storageFullKey = storageKey ? `dimensionWeights:${storageKey}` : null;
+  useEffect(() => {
+    if (!storageFullKey) return;
+    try {
+      const raw = localStorage.getItem(storageFullKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>;
+        const cleaned: Record<number, number> = {};
+        for (const d of dimensions) {
+          const v = parsed[String(d.id)];
+          if (typeof v === "number" && v >= 0 && v <= 5) {
+            cleaned[d.id] = v;
+          }
+        }
+        if (Object.keys(cleaned).length > 0) setWeights(cleaned);
+      }
+    } catch {
+      // 忽略损坏数据
+    }
+  }, [storageFullKey, dimensions]);
+
+  function getWeight(dimId: number): number {
+    return weights[dimId] ?? 1;
+  }
+
+  function updateWeight(dimId: number, value: number) {
+    setWeights((prev) => {
+      const next = { ...prev, [dimId]: value };
+      if (storageFullKey) {
+        try {
+          localStorage.setItem(storageFullKey, JSON.stringify(next));
+        } catch {
+          // localStorage 不可用时静默失败
+        }
+      }
+      return next;
+    });
+  }
+
+  function resetWeights() {
+    setWeights({});
+    if (storageFullKey) {
+      try {
+        localStorage.removeItem(storageFullKey);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // 是否使用了非默认权重
+  const hasCustomWeights = useMemo(
+    () => dimensions.some((d) => weights[d.id] !== undefined && weights[d.id] !== 1),
+    [weights, dimensions],
+  );
+
+  // 用权重重算每个模型的综合分（覆盖 m.overall）
+  const weightedModels = useMemo<ModelRow[]>(() => {
+    if (!hasCustomWeights) return models;
+    return models.map((m) => {
+      let weightedSum = 0;
+      let totalWeight = 0;
+      for (const d of dimensions) {
+        const s = m.scores[d.id];
+        if (s?.weighted == null) continue;
+        const w = getWeight(d.id);
+        if (w <= 0) continue;
+        weightedSum += s.weighted * w;
+        totalWeight += w;
+      }
+      return {
+        ...m,
+        overall: totalWeight > 0 ? weightedSum / totalWeight : null,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models, dimensions, weights, hasCustomWeights]);
+
+  // 自定义权重时默认按新 overall 重排（除非用户已手动选了列）
+  const baseModels = useMemo(() => {
+    if (!hasCustomWeights || sort) return weightedModels;
+    return [...weightedModels].sort(
+      (a, b) => (b.overall ?? -1) - (a.overall ?? -1),
+    );
+  }, [weightedModels, sort, hasCustomWeights]);
 
   const onHeaderClick = (key: SortKey) => {
     setSort((prev) => {
@@ -36,9 +133,9 @@ export function RankingTable({
   };
 
   const sortedModels = useMemo(() => {
-    if (!sort) return models;
+    if (!sort) return baseModels;
     const sign = sort.order === "asc" ? 1 : -1;
-    return [...models].sort((a, b) => {
+    return [...baseModels].sort((a, b) => {
       const av = getValue(a, sort.key);
       const bv = getValue(b, sort.key);
       // null / undefined 永远排最后
@@ -50,7 +147,7 @@ export function RankingTable({
       }
       return ((av as number) - (bv as number)) * sign;
     });
-  }, [models, sort]);
+  }, [baseModels, sort]);
 
   // 列宽预设
   // 模型列固定，分数 / 综合 / 票数列固定为较窄的数字列
@@ -78,6 +175,48 @@ export function RankingTable({
 
   return (
     <>
+      {/* 偏好工具条：仅在显示综合分（正式榜）时出现 */}
+      {showOverall && (
+        <div className="mb-3 flex items-center justify-end gap-3 text-xs">
+          {hasCustomWeights && (
+            <span className="text-zinc-500">
+              已应用个人偏好
+              <button
+                type="button"
+                onClick={resetWeights}
+                className="ml-2 text-blue-600 hover:underline dark:text-blue-400"
+              >
+                重置
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setPrefsOpen((v) => !v)}
+            className={`rounded-md border px-3 py-1.5 transition-colors ${
+              prefsOpen
+                ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                : "border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            }`}
+          >
+            📊 我的偏好
+          </button>
+        </div>
+      )}
+
+      {/* 偏好面板 */}
+      {showOverall && prefsOpen && (
+        <PrefsPanel
+          dimensions={dimensions}
+          weights={weights}
+          getWeight={getWeight}
+          onChange={updateWeight}
+          onReset={resetWeights}
+          onClose={() => setPrefsOpen(false)}
+          hasCustomWeights={hasCustomWeights}
+        />
+      )}
+
       {/* 移动端：排序条 + 卡片列表 */}
       <div className="md:hidden">
         <MobileSortBar
@@ -386,4 +525,97 @@ function getValue(row: ModelRow, key: SortKey): string | number | null {
     return row.scores[dimId]?.avg ?? null;
   }
   return null;
+}
+
+// ============================================================
+// 偏好面板（自定义维度权重）
+// ============================================================
+
+function PrefsPanel({
+  dimensions,
+  weights,
+  getWeight,
+  onChange,
+  onReset,
+  onClose,
+  hasCustomWeights,
+}: {
+  dimensions: DimensionInfo[];
+  weights: Record<number, number>;
+  getWeight: (id: number) => number;
+  onChange: (id: number, value: number) => void;
+  onReset: () => void;
+  onClose: () => void;
+  hasCustomWeights: boolean;
+}) {
+  // 抑制 unused
+  void weights;
+  return (
+    <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-3 flex items-baseline justify-between">
+        <div>
+          <div className="text-sm font-medium">自定义维度权重</div>
+          <div className="text-xs text-zinc-500">
+            权重越高，该维度对综合分的影响越大。0 表示不参与计算。变更只影响你自己看到的排序。
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          {hasCustomWeights && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              全部恢复默认
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            收起 ▲
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {dimensions.map((d) => {
+          const w = getWeight(d.id);
+          return (
+            <div
+              key={d.id}
+              className="flex items-center justify-between gap-3 rounded-md bg-zinc-50 px-3 py-2 dark:bg-zinc-800/40"
+            >
+              <div className="min-w-0 text-sm" title={d.description ?? undefined}>
+                {d.name}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={5}
+                  step={1}
+                  value={w}
+                  onChange={(e) => onChange(d.id, Number(e.target.value))}
+                  className="w-24 cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                />
+                <span
+                  className={`w-6 text-center text-sm tabular-nums ${
+                    w === 0
+                      ? "text-zinc-400"
+                      : w === 1
+                        ? "text-zinc-500"
+                        : "font-semibold text-zinc-900 dark:text-zinc-100"
+                  }`}
+                >
+                  {w === 0 ? "✕" : `×${w}`}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

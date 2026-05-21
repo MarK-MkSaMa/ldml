@@ -66,6 +66,7 @@ export default async function RankingPage({
               dimensions={data.dimensions}
               models={data.listed}
               showOverall={true}
+              storageKey={category}
             />
           )}
         </RankingsShell>
