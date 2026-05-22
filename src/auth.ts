@@ -14,6 +14,7 @@
  */
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
+import { ProxyAgent, setGlobalDispatcher } from "undici";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -28,8 +29,10 @@ import { env } from "@/env";
 // ============================================================
 const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 if (proxyUrl) {
-  const undici = require("undici") as typeof import("undici");
-  undici.setGlobalDispatcher(new undici.ProxyAgent(proxyUrl));
+  console.log(`[auth] Using proxy: ${proxyUrl}`);
+  setGlobalDispatcher(new ProxyAgent(proxyUrl));
+} else {
+  console.log("[auth] No HTTPS_PROXY / HTTP_PROXY env set, fetch goes direct");
 }
 
 /**
