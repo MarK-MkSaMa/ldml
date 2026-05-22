@@ -29,10 +29,7 @@ import { env } from "@/env";
 // ============================================================
 const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 if (proxyUrl) {
-  console.log(`[auth] Using proxy: ${proxyUrl}`);
   setGlobalDispatcher(new ProxyAgent(proxyUrl));
-} else {
-  console.log("[auth] No HTTPS_PROXY / HTTP_PROXY env set, fetch goes direct");
 }
 
 /**
