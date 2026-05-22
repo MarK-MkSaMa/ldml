@@ -19,6 +19,19 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
 
+// ============================================================
+// Node 全局 fetch 走代理
+//
+// Node 18+ 的内置 fetch（基于 undici）不会读 HTTPS_PROXY 环境变量，
+// 导致 OAuth 出站请求在 DNS 污染 + 必须走代理的网络下失败。
+// 这里在检测到 HTTPS_PROXY / HTTP_PROXY 时显式安装 ProxyAgent。
+// ============================================================
+const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+if (proxyUrl) {
+  const undici = require("undici") as typeof import("undici");
+  undici.setGlobalDispatcher(new undici.ProxyAgent(proxyUrl));
+}
+
 /**
  * Linux DO 返回的用户信息字段
  * 参考：https://connect.linux.do/
