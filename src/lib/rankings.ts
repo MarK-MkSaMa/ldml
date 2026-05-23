@@ -4,6 +4,7 @@
  * 提供按 (license, category) 查询正式榜 / 观察区模型 + 各维度评分的函数
  */
 import { unstable_cache } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db";
 import {
   licenses,
@@ -13,6 +14,7 @@ import {
   modelStats,
 } from "@/db/schema";
 import { and, eq, asc, inArray } from "drizzle-orm";
+import { recomputeStatsIfStale } from "./stats-refresh";
 
 export type DimensionInfo = {
   id: number;
@@ -136,6 +138,19 @@ async function getRankingUncached(
   const observing = all
     .filter((m) => m.status === "observing")
     .sort((a, b) => Number(b.pinned) - Number(a.pinned));
+
+  // 响应返回后，异步检查 model_stats 是否 stale（因时间衰减需重算）
+  // 不阻塞当前响应；下次访问就能拿到新分数
+  try {
+    after(() => {
+      recomputeStatsIfStale().catch((e) =>
+        console.error("[stats-refresh]", e),
+      );
+    });
+  } catch {
+    // after() 不能在所有上下文里调用（如在非请求范围调用 getRanking 时）
+    // 失败就跳过，下次有真实请求时再触发
+  }
 
   return {
     license: { slug: lic.slug, name: lic.name },

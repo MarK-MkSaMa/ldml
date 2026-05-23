@@ -20,8 +20,9 @@
  */
 import { db } from "@/db";
 import { votes, voteHistory, modelStats, dimensions, models } from "@/db/schema";
-import { and, eq, sql, avg, count } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
+import { voteWeight } from "./vote-weight";
 
 const BAYES_C = 30;
 
@@ -165,42 +166,66 @@ export async function withdrawVote(
 /**
  * 重算某 (model, dimension) 的 model_stats
  *
- * 全站均值 m 是 (dimension) 维度的均值；我们用所有 model 在该 dimension 的平均
- * 作为 m。这样新维度刚开始时 m 也会动态变化。
+ * 评分按时间加权（见 vote-weight.ts）：
+ *   - weightedSum   = Σ(score × weight(age))
+ *   - effectiveN    = Σ(weight(age))          # 等效"票数"
+ *   - avg           = weightedSum / effectiveN
+ *
+ * 然后再做贝叶斯加权：
+ *   weightedScore = (C × m + effectiveN × avg) / (C + effectiveN)
+ *
+ * 全站均值 m 同样用时间加权。
+ *
+ * 展示用 voteCount 仍是原始票数（用户更熟悉的概念），
+ * weightedScore 用于排行。
  */
 async function recomputeModelStat(modelId: string, dimensionId: number): Promise<void> {
-  // 1. 本 (model, dim) 的统计
-  const [agg] = await db
-    .select({
-      n: count(votes.id),
-      avg: avg(votes.score),
-    })
+  const now = new Date();
+
+  // 1. 拉本 (model, dim) 的所有票，在内存里做加权
+  const myVotes = await db
+    .select({ score: votes.score, updatedAt: votes.updatedAt })
     .from(votes)
     .where(and(eq(votes.modelId, modelId), eq(votes.dimensionId, dimensionId)));
 
-  const n = Number(agg?.n ?? 0);
-  const avgScore = agg?.avg !== null && agg?.avg !== undefined ? Number(agg.avg) : null;
+  const rawCount = myVotes.length;
+  let weightedSum = 0;
+  let effectiveN = 0;
+  for (const v of myVotes) {
+    const w = voteWeight(v.updatedAt, now);
+    weightedSum += v.score * w;
+    effectiveN += w;
+  }
+  const avgScore = effectiveN > 0 ? weightedSum / effectiveN : null;
 
-  // 2. 该 dimension 上全站均值 m
-  const [globalAgg] = await db
-    .select({ globalAvg: avg(votes.score) })
+  // 2. 全站均值 m（该 dimension 下所有票，同样加权）
+  const allVotesInDim = await db
+    .select({ score: votes.score, updatedAt: votes.updatedAt })
     .from(votes)
     .where(eq(votes.dimensionId, dimensionId));
-  const m =
-    globalAgg?.globalAvg !== null && globalAgg?.globalAvg !== undefined
-      ? Number(globalAgg.globalAvg)
-      : null;
+
+  let globalWeightedSum = 0;
+  let globalEffectiveN = 0;
+  for (const v of allVotesInDim) {
+    const w = voteWeight(v.updatedAt, now);
+    globalWeightedSum += v.score * w;
+    globalEffectiveN += w;
+  }
+  const m = globalEffectiveN > 0 ? globalWeightedSum / globalEffectiveN : null;
 
   // 3. 贝叶斯加权分
-  // 若全站还没有任何投票（m=null），退化为 avgScore
   let weighted: number | null = null;
-  if (n > 0 && avgScore !== null) {
+  if (effectiveN > 0 && avgScore !== null) {
     if (m === null) {
       weighted = avgScore;
     } else {
-      weighted = (BAYES_C * m + n * avgScore) / (BAYES_C + n);
+      weighted = (BAYES_C * m + effectiveN * avgScore) / (BAYES_C + effectiveN);
     }
   }
+
+  // 抑制 unused
+  void sql;
+  const n = rawCount;
 
   // 4. upsert model_stats
   await db
