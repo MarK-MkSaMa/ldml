@@ -9,6 +9,7 @@ import {
   dimensions,
 } from "@/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { votePercent, shouldRevote } from "./vote-weight";
 
 export type MyVoteRow = {
   modelId: string;
@@ -19,6 +20,10 @@ export type MyVoteRow = {
   dimensionName: string;
   score: number;
   updatedAt: Date;
+  /** 当前评分新鲜度百分比（20-100） */
+  weightPercent: number;
+  /** 是否到了建议重投的程度（权重 < 60%） */
+  stale: boolean;
 };
 
 export type MyCommentRow = {
@@ -78,6 +83,7 @@ export async function getMyVotes(userId: string, limit = 200): Promise<MyVoteRow
   const modelMap = new Map(modelInfos.map((m) => [m.id, m]));
   const dimMap = new Map(dimInfos.map((d) => [d.id, d]));
 
+  const now = new Date();
   return rows.map((r) => {
     const m = modelMap.get(r.modelId);
     const d = dimMap.get(r.dimensionId);
@@ -90,8 +96,23 @@ export async function getMyVotes(userId: string, limit = 200): Promise<MyVoteRow
       dimensionName: d?.name ?? "(未知维度)",
       score: r.score,
       updatedAt: r.updatedAt,
+      weightPercent: votePercent(r.updatedAt, now),
+      stale: shouldRevote(r.updatedAt, now),
     };
   });
+}
+
+/**
+ * 统计当前用户有多少张"快过期"的票（weight < 60%）
+ * 用于顶部提示卡
+ */
+export async function countStaleVotes(userId: string): Promise<number> {
+  const rows = await db
+    .select({ updatedAt: votes.updatedAt })
+    .from(votes)
+    .where(eq(votes.userId, userId));
+  const now = new Date();
+  return rows.filter((r) => shouldRevote(r.updatedAt, now)).length;
 }
 
 /**

@@ -49,45 +49,54 @@ export default async function ProfilePage({
   ]);
 
   // 按模型分组评分
+  type GroupedDim = {
+    dimensionName: string;
+    score: number;
+    updatedAt: Date;
+    weightPercent: number;
+    stale: boolean;
+  };
   const votesByModel = new Map<
     string,
     {
       modelSlug: string;
       modelName: string;
       modelVendor: string | null;
-      dims: { dimensionName: string; score: number; updatedAt: Date }[];
+      dims: GroupedDim[];
       lastAt: Date;
+      hasStale: boolean;
     }
   >();
   for (const v of votes) {
     const key = v.modelId;
+    const dim: GroupedDim = {
+      dimensionName: v.dimensionName,
+      score: v.score,
+      updatedAt: v.updatedAt,
+      weightPercent: v.weightPercent,
+      stale: v.stale,
+    };
     const g = votesByModel.get(key);
     if (g) {
-      g.dims.push({
-        dimensionName: v.dimensionName,
-        score: v.score,
-        updatedAt: v.updatedAt,
-      });
+      g.dims.push(dim);
       if (v.updatedAt > g.lastAt) g.lastAt = v.updatedAt;
+      if (v.stale) g.hasStale = true;
     } else {
       votesByModel.set(key, {
         modelSlug: v.modelSlug,
         modelName: v.modelName,
         modelVendor: v.modelVendor,
-        dims: [
-          {
-            dimensionName: v.dimensionName,
-            score: v.score,
-            updatedAt: v.updatedAt,
-          },
-        ],
+        dims: [dim],
         lastAt: v.updatedAt,
+        hasStale: v.stale,
       });
     }
   }
   const votesGrouped = [...votesByModel.entries()]
     .sort((a, b) => b[1].lastAt.getTime() - a[1].lastAt.getTime())
     .map(([modelId, g]) => ({ modelId, ...g }));
+
+  const totalStaleVotes = votes.filter((v) => v.stale).length;
 
   return (
     <main className="flex flex-1 flex-col">
@@ -151,6 +160,14 @@ export default async function ProfilePage({
           </div>
         </section>
 
+        {/* 评分过期提醒 */}
+        {totalStaleVotes > 0 && tab === "votes" && (
+          <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            🕒 你有 <strong>{totalStaleVotes}</strong> 张评分新鲜度已降到 60% 以下，
+            模型更新换代很快，要不要去重新评估一下？
+          </div>
+        )}
+
         {/* Tab */}
         <nav className="mb-6 flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
           {TABS.map((t) => {
@@ -184,8 +201,8 @@ export default async function ProfilePage({
                     key={g.modelId}
                     className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
                   >
-                    <div className="mb-2 flex items-baseline justify-between gap-3">
-                      <div className="min-w-0">
+                    <div className="mb-3 flex items-baseline justify-between gap-3">
+                      <div className="min-w-0 flex items-baseline gap-2">
                         <Link
                           href={`/models/${g.modelSlug}`}
                           className="font-medium hover:text-blue-600 hover:underline dark:hover:text-blue-400"
@@ -193,26 +210,26 @@ export default async function ProfilePage({
                           {g.modelName}
                         </Link>
                         {g.modelVendor && (
-                          <span className="ml-2 text-xs text-zinc-500">
+                          <span className="text-xs text-zinc-500">
                             {g.modelVendor}
                           </span>
                         )}
+                        {g.hasStale && (
+                          <Link
+                            href={`/models/${g.modelSlug}`}
+                            className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
+                          >
+                            重新评估 →
+                          </Link>
+                        )}
                       </div>
-                      <span className="text-xs text-zinc-500">
+                      <span className="shrink-0 text-xs text-zinc-500">
                         {g.lastAt.toLocaleString("zh-CN", { hour12: false })}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-3">
+                    <div className="space-y-2 text-sm">
                       {g.dims.map((d) => (
-                        <div
-                          key={d.dimensionName}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-zinc-600 dark:text-zinc-400">
-                            {d.dimensionName}
-                          </span>
-                          <span className="tabular-nums font-medium">{d.score}</span>
-                        </div>
+                        <DimRow key={d.dimensionName} d={d} />
                       ))}
                     </div>
                   </li>
@@ -292,5 +309,49 @@ export default async function ProfilePage({
 
       <SiteFooter />
     </main>
+  );
+}
+
+/**
+ * 单维度评分行：名称 + 分数 + 新鲜度进度条
+ */
+function DimRow({
+  d,
+}: {
+  d: {
+    dimensionName: string;
+    score: number;
+    weightPercent: number;
+    stale: boolean;
+  };
+}) {
+  // 颜色随权重变化：≥80 绿，60-80 黄，<60 红
+  let barCls = "bg-green-500";
+  if (d.weightPercent < 60) barCls = "bg-red-500";
+  else if (d.weightPercent < 80) barCls = "bg-amber-500";
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-20 text-zinc-600 dark:text-zinc-400">
+        {d.dimensionName}
+      </span>
+      <span className="w-6 tabular-nums font-medium">{d.score}</span>
+      <div
+        className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+        title={`新鲜度 ${d.weightPercent}%${d.stale ? "（建议重投）" : ""}`}
+      >
+        <div
+          className={`h-full transition-all ${barCls}`}
+          style={{ width: `${d.weightPercent}%` }}
+        />
+      </div>
+      <span
+        className={`w-12 text-right text-xs tabular-nums ${
+          d.stale ? "text-red-600 dark:text-red-400" : "text-zinc-500"
+        }`}
+      >
+        {d.weightPercent}%
+      </span>
+    </div>
   );
 }
