@@ -5,20 +5,21 @@
  *
  * 公式：weight = max(0.5 ^ (age_days / halfLife), floor)
  *
- * - halfLife = 180 天（半年）
+ * - halfLife = 90 天（3 个月）
  * - floor    = 0.20（永不归零，老票仍有 20% 历史价值）
  *
  * 票龄          权重
  *   当天        1.00
- *   3 个月      0.71
- *   6 个月      0.50
- *   1 年        0.25
- *   1.5 年      0.20（保底）
+ *   1 个月      0.79
+ *   2 个月      0.63
+ *   3 个月      0.50（半衰期）
+ *   6 个月      0.25
+ *   9 个月      0.20（已触底）
  *
  * 此文件**纯计算**，无副作用，前后端共用。
  */
 
-export const HALF_LIFE_DAYS = 180;
+export const HALF_LIFE_DAYS = 90;
 export const WEIGHT_FLOOR = 0.2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
