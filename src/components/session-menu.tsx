@@ -5,11 +5,12 @@
  * 已登录：显示头像 + 用户名 + 登出按钮
  */
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 
 export async function SessionMenu() {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     return (
       <Link
         href="/login"
@@ -27,18 +28,18 @@ export async function SessionMenu() {
         className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
         title="个人中心"
       >
-        {session.user.image && (
+        {user.avatarUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={session.user.image}
+            src={user.avatarUrl}
             alt=""
             className="h-7 w-7 rounded-full"
             referrerPolicy="no-referrer"
           />
         )}
-        <span>{session.user.username}</span>
+        <span>{user.username}</span>
       </Link>
-      {session.user.isAdmin && (
+      {user.isAdmin && (
         <Link
           href="/admin"
           className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"

@@ -5,7 +5,6 @@
  */
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import {
   createModelAdmin,
   updateModelAdmin,
@@ -13,14 +12,10 @@ import {
   setModelStatusAdmin,
   setModelPinnedAdmin,
 } from "@/lib/admin-models";
+import { requireAdminFresh } from "@/lib/current-user";
 import { promoteEligibleModels } from "@/lib/promotion";
 import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
-
-async function requireAdmin(): Promise<void> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-}
 
 function parseInput(formData: FormData) {
   const get = (k: string) => {
@@ -56,7 +51,7 @@ function bust() {
 }
 
 export async function createModelAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   const input = parseInput(formData);
   await createModelAdmin(input);
   bust();
@@ -64,7 +59,7 @@ export async function createModelAction(formData: FormData) {
 }
 
 export async function updateModelAction(id: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   const input = parseInput(formData);
   await updateModelAdmin(id, input);
   bust();
@@ -72,20 +67,20 @@ export async function updateModelAction(id: string, formData: FormData) {
 }
 
 export async function setStatusAction(id: string, status: ModelStatus) {
-  await requireAdmin();
+  await requireAdminFresh();
   if (!modelStatusEnum.includes(status)) throw new Error("非法状态");
   await setModelStatusAdmin(id, status);
   bust();
 }
 
 export async function setPinnedAction(id: string, pinned: boolean) {
-  await requireAdmin();
+  await requireAdminFresh();
   await setModelPinnedAdmin(id, pinned);
   bust();
 }
 
 export async function deleteModelAction(id: string) {
-  await requireAdmin();
+  await requireAdminFresh();
   await deleteModelAdmin(id);
   bust();
 }
@@ -97,7 +92,7 @@ export async function promoteEligibleAction(): Promise<{
   checked: number;
   promoted: number;
 }> {
-  await requireAdmin();
+  await requireAdminFresh();
   const result = await promoteEligibleModels();
   if (result.promoted > 0) bust();
   return result;

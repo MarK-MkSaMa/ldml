@@ -2,17 +2,12 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import {
   createDimensionAdmin,
   updateDimensionAdmin,
   deleteDimensionAdmin,
 } from "@/lib/admin-dimensions";
-
-async function requireAdmin(): Promise<void> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-}
+import { requireAdminFresh } from "@/lib/current-user";
 
 function parseInput(formData: FormData) {
   const get = (k: string) => {
@@ -35,21 +30,21 @@ function bust() {
 }
 
 export async function createDimensionAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   await createDimensionAdmin(parseInput(formData));
   bust();
   redirect("/admin/dimensions");
 }
 
 export async function updateDimensionAction(id: number, formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   await updateDimensionAdmin(id, parseInput(formData));
   bust();
   redirect("/admin/dimensions");
 }
 
 export async function deleteDimensionAction(id: number) {
-  await requireAdmin();
+  await requireAdminFresh();
   await deleteDimensionAdmin(id);
   bust();
 }

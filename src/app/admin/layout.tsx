@@ -10,7 +10,8 @@
  */
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { AdminNav } from "./admin-nav";
 
 export default async function AdminLayout({
@@ -18,17 +19,17 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     redirect("/login?next=/admin");
   }
-  if (!session.user.isAdmin) {
+  if (!user.isAdmin) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 py-24">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-bold tracking-tight">403 · 无权访问</h1>
           <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-            后台仅管理员可见。你当前以 <strong>{session.user.username}</strong> 登录，
+            后台仅管理员可见。你当前以 <strong>{user.username}</strong> 登录，
             但没有管理员权限。
           </p>
           <Link
@@ -60,7 +61,7 @@ export default async function AdminLayout({
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-zinc-700 dark:text-zinc-300">
-              {session.user.username}
+              {user.username}
             </span>
             <form
               action={async () => {

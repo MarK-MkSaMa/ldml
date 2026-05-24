@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import {
   updateComment,
   deleteComment,
@@ -17,12 +17,12 @@ const patchSchema = z.object({
 });
 
 async function getCtx() {
-  const session = await auth();
-  if (!session?.user) return null;
+  const user = await getCurrentUserFresh();
+  if (!user) return null;
   return {
-    userId: session.user.id,
-    trustLevel: session.user.trustLevel,
-    isAdmin: session.user.isAdmin,
+    userId: user.id,
+    trustLevel: user.trustLevel,
+    isAdmin: user.isAdmin,
   };
 }
 

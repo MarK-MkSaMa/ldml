@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { listUsersForAdmin, type UserFilter } from "@/lib/admin-users";
 import { UserRowActions } from "./row-actions";
-import { auth } from "@/auth";
+import { requireAdminFresh } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +24,11 @@ export default async function AdminUsersPage({
     (FILTERS.find((f) => f.value === sp.filter)?.value as UserFilter) ?? "all";
   const search = sp.q?.trim() ?? "";
 
-  const rows = await listUsersForAdmin(filter, search);
-  const session = await auth();
-  const selfId = session?.user?.id;
+  const [rows, admin] = await Promise.all([
+    listUsersForAdmin(filter, search),
+    requireAdminFresh(),
+  ]);
+  const selfId = admin.id;
 
   return (
     <div>

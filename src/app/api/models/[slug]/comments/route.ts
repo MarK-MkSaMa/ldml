@@ -5,10 +5,10 @@
  */
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { models } from "@/db/schema";
 import { listCommentsForModel } from "@/lib/comments";
+import { getCurrentUserFresh } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +27,10 @@ export async function GET(
     .where(eq(models.slug, slug));
   if (!m) return NextResponse.json({ error: "模型不存在" }, { status: 404 });
 
-  const session = await auth();
+  const user = await getCurrentUserFresh();
   const tree = await listCommentsForModel(m.id, {
     sort: sortKey,
-    viewerId: session?.user?.id,
+    viewerId: user?.id,
   });
 
   return NextResponse.json({ comments: tree });

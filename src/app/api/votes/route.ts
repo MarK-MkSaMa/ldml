@@ -10,7 +10,7 @@
 import { NextResponse } from "next/server";
 import { updateTag } from "next/cache";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { castVote, VoteError } from "@/lib/votes";
 import { maybePromoteModel } from "@/lib/promotion";
 
@@ -21,11 +21,11 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
-  if (session.user.trustLevel < 1) {
+  if (user.trustLevel < 1) {
     return NextResponse.json(
       { error: "信任等级不足，需要 Linux DO 等级 1 及以上" },
       { status: 403 },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
   try {
     await castVote(
-      { userId: session.user.id, ip, userAgent },
+      { userId: user.id, ip, userAgent },
       parsed.data.modelId,
       parsed.data.dimensionId,
       parsed.data.score,

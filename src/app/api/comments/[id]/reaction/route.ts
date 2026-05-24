@@ -6,7 +6,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { setReaction, CommentError } from "@/lib/comments";
 import { codeToStatus } from "../../_helpers";
 
@@ -18,8 +18,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
   const { id } = await params;
@@ -34,9 +34,9 @@ export async function POST(
   try {
     await setReaction(
       {
-        userId: session.user.id,
-        trustLevel: session.user.trustLevel,
-        isAdmin: session.user.isAdmin,
+        userId: user.id,
+        trustLevel: user.trustLevel,
+        isAdmin: user.isAdmin,
       },
       id,
       parsed.data.reaction,

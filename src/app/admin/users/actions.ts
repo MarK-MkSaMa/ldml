@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { env } from "@/env";
 import {
   setUserBannedAdmin,
@@ -9,19 +8,15 @@ import {
   countAdminUsers,
   getUserByIdForAdmin,
 } from "@/lib/admin-users";
-
-async function requireAdmin(): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-  return session.user.id;
-}
+import { requireAdminFresh } from "@/lib/current-user";
 
 function bust() {
   revalidatePath("/admin/users");
 }
 
 export async function setBannedAction(userId: string, banned: boolean) {
-  const adminId = await requireAdmin();
+  const admin = await requireAdminFresh();
+  const adminId = admin.id;
   if (userId === adminId && banned) {
     throw new Error("不能封禁自己");
   }
@@ -30,7 +25,8 @@ export async function setBannedAction(userId: string, banned: boolean) {
 }
 
 export async function setAdminFlagAction(userId: string, isAdmin: boolean) {
-  const adminId = await requireAdmin();
+  const admin = await requireAdminFresh();
+  const adminId = admin.id;
   // 不允许自己取消自己的管理员
   if (userId === adminId && !isAdmin) {
     throw new Error("不能取消自己的管理员权限");

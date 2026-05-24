@@ -6,9 +6,9 @@
  */
 import { notFound } from "next/navigation";
 import { asc } from "drizzle-orm";
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { getRanking } from "@/lib/rankings";
 import { RankingTable } from "./ranking-table";
 import { ObservingSection } from "./observing-section";
@@ -36,12 +36,12 @@ export default async function RankingPage({
   ]);
   if (!data) notFound();
 
-  const session = await auth();
+  const user = await getCurrentUserFresh();
   let hintText: string;
-  if (!session?.user) {
+  if (!user) {
     hintText = "💡 点击任意一行查看模型详情并评分 · 需先登录 Linux DO";
-  } else if (session.user.trustLevel < 1) {
-    hintText = `💡 点击任意一行查看模型详情 · 你的信任等级 ${session.user.trustLevel} 暂不能评分（需达到 1 级）`;
+  } else if (user.trustLevel < 1) {
+    hintText = `💡 点击任意一行查看模型详情 · 你的信任等级 ${user.trustLevel} 暂不能评分（需达到 1 级）`;
   } else {
     hintText = "💡 点击任意一行进入模型详情并对各维度评分";
   }

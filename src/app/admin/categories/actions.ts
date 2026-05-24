@@ -2,17 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import {
   createCategoryAdmin,
   updateCategoryAdmin,
   deleteCategoryAdmin,
 } from "@/lib/admin-categories";
-
-async function requireAdmin(): Promise<void> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-}
+import { requireAdminFresh } from "@/lib/current-user";
 
 function parseInput(formData: FormData) {
   const get = (k: string) => {
@@ -33,21 +28,21 @@ function bust() {
 }
 
 export async function createCategoryAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   await createCategoryAdmin(parseInput(formData));
   bust();
   redirect("/admin/categories");
 }
 
 export async function updateCategoryAction(id: number, formData: FormData) {
-  await requireAdmin();
+  await requireAdminFresh();
   await updateCategoryAdmin(id, parseInput(formData));
   bust();
   redirect("/admin/categories");
 }
 
 export async function deleteCategoryAction(id: number) {
-  await requireAdmin();
+  await requireAdminFresh();
   await deleteCategoryAdmin(id);
   bust();
 }

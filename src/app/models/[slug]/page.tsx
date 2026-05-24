@@ -4,7 +4,7 @@
  */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { getModelBySlug } from "@/lib/models";
 import { getUserVotesForModel } from "@/lib/votes";
 import { listCommentsForModel, type CommentSort } from "@/lib/comments";
@@ -27,31 +27,29 @@ export default async function ModelDetailPage({
   const model = await getModelBySlug(slug);
   if (!model) notFound();
 
-  const session = await auth();
-  const myVotes = session?.user
-    ? await getUserVotesForModel(session.user.id, model.id)
-    : {};
+  const user = await getCurrentUserFresh();
+  const myVotes = user ? await getUserVotesForModel(user.id, model.id) : {};
 
-  const canVote = !!session?.user && session.user.trustLevel >= 1;
+  const canVote = !!user && user.trustLevel >= 1;
   let notVotableReason: string | undefined;
-  if (!session?.user) {
+  if (!user) {
     notVotableReason = "登录后即可对各维度评分";
-  } else if (session.user.trustLevel < 1) {
-    notVotableReason = `你的 Linux DO 信任等级为 ${session.user.trustLevel}，需要达到 1 级才能投票`;
+  } else if (user.trustLevel < 1) {
+    notVotableReason = `你的 Linux DO 信任等级为 ${user.trustLevel}，需要达到 1 级才能投票`;
   }
 
   // 评论数据 + 当前用户评论权限
   const commentSort: CommentSort = sp.sort === "latest" ? "latest" : "hot";
   const comments = await listCommentsForModel(model.id, {
     sort: commentSort,
-    viewerId: session?.user?.id,
+    viewerId: user?.id,
   });
-  const canComment = !!session?.user && session.user.trustLevel >= 1;
+  const canComment = !!user && user.trustLevel >= 1;
   let notCommentableReason: string | undefined;
-  if (!session?.user) {
+  if (!user) {
     notCommentableReason = "登录后即可发表评论";
-  } else if (session.user.trustLevel < 1) {
-    notCommentableReason = `你的 Linux DO 信任等级为 ${session.user.trustLevel}，需要达到 1 级才能评论`;
+  } else if (user.trustLevel < 1) {
+    notCommentableReason = `你的 Linux DO 信任等级为 ${user.trustLevel}，需要达到 1 级才能评论`;
   }
 
   // 综合分
@@ -170,9 +168,9 @@ export default async function ModelDetailPage({
             initialComments={comments}
             initialSort={commentSort}
             viewer={{
-              isLoggedIn: !!session?.user,
-              userId: session?.user?.id,
-              isAdmin: !!session?.user?.isAdmin,
+              isLoggedIn: !!user,
+              userId: user?.id,
+              isAdmin: !!user?.isAdmin,
               canComment,
               notCommentableReason,
             }}

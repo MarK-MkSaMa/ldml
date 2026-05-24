@@ -1,24 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import {
   createKeyword,
   deleteKeyword,
 } from "@/lib/admin-keywords";
-
-async function requireAdmin(): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-  return session.user.id;
-}
+import { requireAdminFresh } from "@/lib/current-user";
 
 function bust() {
   revalidatePath("/admin/keywords");
 }
 
 export async function createKeywordAction(formData: FormData) {
-  const adminId = await requireAdmin();
+  const admin = await requireAdminFresh();
+  const adminId = admin.id;
   const pattern = String(formData.get("pattern") ?? "");
   const isRegex = formData.get("isRegex") === "on";
   const action = (formData.get("action") as "block" | "hide") ?? "block";
@@ -27,7 +22,7 @@ export async function createKeywordAction(formData: FormData) {
 }
 
 export async function deleteKeywordAction(id: number) {
-  await requireAdmin();
+  await requireAdminFresh();
   await deleteKeyword(id);
   bust();
 }

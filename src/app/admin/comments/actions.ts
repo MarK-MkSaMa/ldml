@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import {
   unhideCommentAdmin,
   hideCommentAdmin,
@@ -9,12 +8,7 @@ import {
   resolveReportAdmin,
   resolveAllReportsForComment,
 } from "@/lib/admin-comments";
-
-async function requireAdmin(): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("无权限");
-  return session.user.id;
-}
+import { requireAdminFresh } from "@/lib/current-user";
 
 function bust() {
   revalidatePath("/admin/comments");
@@ -22,22 +16,22 @@ function bust() {
 }
 
 export async function unhideAction(commentId: string) {
-  await requireAdmin();
+  await requireAdminFresh();
   await unhideCommentAdmin(commentId);
   bust();
 }
 
 export async function hideAction(commentId: string) {
-  await requireAdmin();
+  await requireAdminFresh();
   await hideCommentAdmin(commentId);
   bust();
 }
 
 export async function deleteAction(commentId: string) {
-  const adminId = await requireAdmin();
+  const admin = await requireAdminFresh();
   await deleteCommentAdmin(commentId);
   // 删除后自动 resolve 这条评论上的所有 pending 举报
-  await resolveAllReportsForComment(commentId, adminId, "resolved");
+  await resolveAllReportsForComment(commentId, admin.id, "resolved");
   bust();
 }
 
@@ -45,7 +39,7 @@ export async function resolveReportAction(
   reportId: string,
   status: "resolved" | "rejected",
 ) {
-  const adminId = await requireAdmin();
-  await resolveReportAdmin(reportId, adminId, status);
+  const admin = await requireAdminFresh();
+  await resolveReportAdmin(reportId, admin.id, status);
   bust();
 }

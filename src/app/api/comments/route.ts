@@ -6,7 +6,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { createComment, CommentError } from "@/lib/comments";
 import { codeToStatus } from "./_helpers";
 
@@ -17,8 +17,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
 
@@ -38,9 +38,9 @@ export async function POST(req: Request) {
   try {
     const result = await createComment(
       {
-        userId: session.user.id,
-        trustLevel: session.user.trustLevel,
-        isAdmin: session.user.isAdmin,
+        userId: user.id,
+        trustLevel: user.trustLevel,
+        isAdmin: user.isAdmin,
         ip,
       },
       parsed.data,

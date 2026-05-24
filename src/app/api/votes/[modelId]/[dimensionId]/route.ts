@@ -5,15 +5,15 @@
  */
 import { NextResponse } from "next/server";
 import { updateTag } from "next/cache";
-import { auth } from "@/auth";
+import { getCurrentUserFresh } from "@/lib/current-user";
 import { withdrawVote } from "@/lib/votes";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ modelId: string; dimensionId: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getCurrentUserFresh();
+  if (!user) {
     return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
 
@@ -29,7 +29,7 @@ export async function DELETE(
   const userAgent = req.headers.get("user-agent");
 
   const removed = await withdrawVote(
-    { userId: session.user.id, ip, userAgent },
+    { userId: user.id, ip, userAgent },
     modelId,
     dimId,
   );
