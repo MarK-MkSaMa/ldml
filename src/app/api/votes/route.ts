@@ -8,7 +8,7 @@
  * 需要登录 + trust_level >= 1
  */
 import { NextResponse } from "next/server";
-import { updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserFresh } from "@/lib/current-user";
 import { castVote, VoteError } from "@/lib/votes";
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       console.error("[promotion]", e),
     );
     // 让榜单缓存立即失效，下次访问拉到新分数
-    updateTag("rankings");
+    revalidateTag("rankings", "max");
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof VoteError) {
