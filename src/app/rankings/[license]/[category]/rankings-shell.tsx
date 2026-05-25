@@ -3,33 +3,24 @@
 /**
  * 排行榜客户端外壳
  *
- * 包住"双层 Tab + 引导条 + 内容区"。
+ * 包住"分类 Tab + 引导条 + 内容区"。
  * 点 Tab 时：
- *   1. 立即更新本地 pendingLicense/pendingCategory，让 Tab 高亮瞬间反应
- *   2. useTransition 触发路由切换（startTransition 内部）
- *   3. transition 进行中 (isPending) 时，把 children（服务端渲染的内容）换成 spinner
- *   4. 路由切换完成 → 新 props 进来 → useEffect 清空 pending state → 新 children 替换 spinner
- *
- * 这样上层 Header / Banner / Tabs / 引导条 全程保持，只有内容区有 loading 反馈。
+ *   1. 立即更新本地 pendingCategory，让 Tab 高亮瞬间反应
+ *   2. useTransition 触发路由切换
+ *   3. transition 进行中时，把 children 换成 spinner
+ *   4. 路由切换完成 → 新 props 进来 → 清空 pending state
  */
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-const LICENSE_TABS = [
-  { slug: "closed-source", name: "云端模型" },
-  { slug: "open-source", name: "本地模型" },
-];
-
 export type CategoryTab = { slug: string; name: string };
 
 export function RankingsShell({
-  license,
   category,
   hintText,
   categoryTabs,
   children,
 }: {
-  license: string;
   category: string;
   hintText: string;
   categoryTabs: CategoryTab[];
@@ -37,51 +28,24 @@ export function RankingsShell({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  // 用户点击后的"乐观"选择，在路由实际完成前就用这个高亮 Tab
-  const [pending, setPending] = useState<{
-    license: string | null;
-    category: string | null;
-  }>({ license: null, category: null });
+  const [pendingCategory, setPendingCategory] = useState<string | null>(null);
 
-  // 路由切换完成后，props 会更新，清掉 pending 让显示回到 props
   useEffect(() => {
-    setPending({ license: null, category: null });
-  }, [license, category]);
+    setPendingCategory(null);
+  }, [category]);
 
-  const displayLicense = pending.license ?? license;
-  const displayCategory = pending.category ?? category;
+  const displayCategory = pendingCategory ?? category;
 
-  function navigate(nextLicense: string, nextCategory: string) {
-    if (nextLicense === displayLicense && nextCategory === displayCategory) return;
-    setPending({ license: nextLicense, category: nextCategory });
+  function navigate(nextCategory: string) {
+    if (nextCategory === displayCategory) return;
+    setPendingCategory(nextCategory);
     startTransition(() => {
-      router.push(`/rankings/${nextLicense}/${nextCategory}`);
+      router.push(`/rankings/${nextCategory}`);
     });
   }
 
   return (
     <>
-      {/* 大类 Tab */}
-      <nav className="mb-4 flex gap-2">
-        {LICENSE_TABS.map((tab) => {
-          const active = tab.slug === displayLicense;
-          return (
-            <button
-              key={tab.slug}
-              type="button"
-              onClick={() => navigate(tab.slug, displayCategory)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {tab.name}
-            </button>
-          );
-        })}
-      </nav>
-
       {/* 分类 Tab */}
       <nav className="mb-8 flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
         {categoryTabs.map((tab) => {
@@ -90,7 +54,7 @@ export function RankingsShell({
             <button
               key={tab.slug}
               type="button"
-              onClick={() => navigate(displayLicense, tab.slug)}
+              onClick={() => navigate(tab.slug)}
               className={`-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                 active
                   ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"

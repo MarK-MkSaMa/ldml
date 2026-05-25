@@ -7,13 +7,12 @@ import { unstable_cache } from "next/cache";
 import { after } from "next/server";
 import { db } from "@/db";
 import {
-  licenses,
   categories,
   dimensions,
   models,
   modelStats,
 } from "@/db/schema";
-import { and, eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { recomputeStatsIfStale } from "./stats-refresh";
 
 export type DimensionInfo = {
@@ -28,6 +27,7 @@ export type ModelRow = {
   slug: string;
   name: string;
   vendor: string | null;
+  licenseText: string | null;
   status: "draft" | "observing" | "listed" | "archived";
   pinned: boolean;
   publishedAt: Date | null;
@@ -40,7 +40,6 @@ export type ModelRow = {
 };
 
 export type RankingData = {
-  license: { slug: string; name: string };
   category: { slug: string; name: string };
   dimensions: DimensionInfo[];
   listed: ModelRow[];
@@ -48,21 +47,14 @@ export type RankingData = {
 };
 
 /**
- * 加载某 (license, category) 下的排行榜数据
- * 返回 null 表示 license 或 category slug 不存在
+ * 加载某 category 下的排行榜数据
+ * 返回 null 表示 category slug 不存在
  */
 async function getRankingUncached(
-  licenseSlug: string,
   categorySlug: string,
 ): Promise<RankingData | null> {
-  // 阶段 1：并发查 license + category（两条 SQL 同时发）
-  const [licRows, catRows] = await Promise.all([
-    db.select().from(licenses).where(eq(licenses.slug, licenseSlug)),
-    db.select().from(categories).where(eq(categories.slug, categorySlug)),
-  ]);
-  const lic = licRows[0];
-  const cat = catRows[0];
-  if (!lic || !cat) return null;
+  const [cat] = await db.select().from(categories).where(eq(categories.slug, categorySlug));
+  if (!cat) return null;
 
   // 阶段 2：并发查 dimensions + models（依赖阶段 1 的 ids）
   const [dims, modelRows] = await Promise.all([
@@ -74,7 +66,7 @@ async function getRankingUncached(
     db
       .select()
       .from(models)
-      .where(and(eq(models.licenseId, lic.id), eq(models.categoryId, cat.id))),
+      .where(eq(models.categoryId, cat.id)),
   ]);
 
   // 阶段 3：查相关 model_stats（用 IN 过滤，DB 端就筛好，不再拉全表）
@@ -116,6 +108,7 @@ async function getRankingUncached(
       slug: m.slug,
       name: m.name,
       vendor: m.vendor,
+      licenseText: m.licenseText,
       status: m.status,
       pinned: m.pinned,
       publishedAt: m.publishedAt,
@@ -147,7 +140,6 @@ async function getRankingUncached(
   }
 
   return {
-    license: { slug: lic.slug, name: lic.name },
     category: { slug: cat.slug, name: cat.name },
     dimensions: dims.map((d) => ({
       id: d.id,
@@ -173,12 +165,9 @@ export const getRanking = unstable_cache(
 );
 
 /**
- * 用于生成静态路径 —— 列出所有 (license, category) 组合
+ * 用于生成静态路径 —— 列出所有 category
  */
-export async function getAllRankingPaths(): Promise<
-  { license: string; category: string }[]
-> {
-  const ls = await db.select({ slug: licenses.slug }).from(licenses);
+export async function getAllRankingPaths(): Promise<{ category: string }[]> {
   const cs = await db.select({ slug: categories.slug }).from(categories);
-  return ls.flatMap((l) => cs.map((c) => ({ license: l.slug, category: c.slug })));
+  return cs.map((c) => ({ category: c.slug }));
 }

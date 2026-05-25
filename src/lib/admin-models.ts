@@ -12,7 +12,6 @@ import { and, asc, desc, eq } from "drizzle-orm";
 export type AdminModelRow = typeof models.$inferSelect;
 
 export type ModelFilter = {
-  licenseId?: number;
   categoryId?: number;
   status?: ModelStatus;
 };
@@ -20,9 +19,9 @@ export type ModelFilter = {
 export type ModelInput = {
   name: string;
   slug: string;
-  licenseId: number;
   categoryId: number;
   vendor?: string | null;
+  licenseText?: string | null;
   homepageUrl?: string | null;
   releasedAt?: string | null; // 'YYYY-MM-DD'
   status: ModelStatus;
@@ -51,7 +50,6 @@ function validate(input: ModelInput): void {
 
 export async function listModelsForAdmin(filter: ModelFilter = {}): Promise<AdminModelRow[]> {
   const conditions = [
-    filter.licenseId !== undefined ? eq(models.licenseId, filter.licenseId) : undefined,
     filter.categoryId !== undefined ? eq(models.categoryId, filter.categoryId) : undefined,
     filter.status !== undefined ? eq(models.status, filter.status) : undefined,
   ].filter(Boolean) as (ReturnType<typeof eq>)[];
@@ -74,9 +72,9 @@ export async function createModelAdmin(input: ModelInput): Promise<AdminModelRow
     .values({
       name: input.name.trim(),
       slug: input.slug.trim(),
-      licenseId: input.licenseId,
       categoryId: input.categoryId,
       vendor: input.vendor?.trim() || null,
+      licenseText: input.licenseText?.trim() || null,
       homepageUrl: input.homepageUrl?.trim() || null,
       releasedAt: input.releasedAt || null,
       status: input.status,
@@ -111,9 +109,9 @@ export async function updateModelAdmin(
     .set({
       name: input.name.trim(),
       slug: input.slug.trim(),
-      licenseId: input.licenseId,
       categoryId: input.categoryId,
       vendor: input.vendor?.trim() || null,
+      licenseText: input.licenseText?.trim() || null,
       homepageUrl: input.homepageUrl?.trim() || null,
       releasedAt: input.releasedAt || null,
       status: input.status,

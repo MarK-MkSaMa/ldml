@@ -4,21 +4,20 @@
 import { db } from "@/db";
 import {
   models,
-  licenses,
   categories,
   dimensions,
   modelStats,
 } from "@/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 export type ModelDetail = {
   id: string;
   slug: string;
   name: string;
   vendor: string | null;
+  licenseText: string | null;
   releasedAt: string | null;
   status: "draft" | "observing" | "listed" | "archived";
-  license: { slug: string; name: string };
   category: { slug: string; name: string };
   dimensions: {
     id: number;
@@ -38,21 +37,20 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
       slug: models.slug,
       name: models.name,
       vendor: models.vendor,
+      licenseText: models.licenseText,
       releasedAt: models.releasedAt,
       status: models.status,
-      licenseId: models.licenseId,
       categoryId: models.categoryId,
     })
     .from(models)
     .where(eq(models.slug, slug));
   if (!m) return null;
 
-  const [lic] = await db.select().from(licenses).where(eq(licenses.id, m.licenseId));
   const [cat] = await db
     .select()
     .from(categories)
     .where(eq(categories.id, m.categoryId));
-  if (!lic || !cat) return null;
+  if (!cat) return null;
 
   const dims = await db
     .select()
@@ -67,17 +65,15 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     .where(eq(modelStats.modelId, m.id));
   const statsByDim = new Map(stats.map((s) => [s.dimensionId, s]));
 
-  // 抑制 unused 警告
-  void and;
 
   return {
     id: m.id,
     slug: m.slug,
     name: m.name,
     vendor: m.vendor,
+    licenseText: m.licenseText,
     releasedAt: m.releasedAt,
     status: m.status,
-    license: { slug: lic.slug, name: lic.name },
     category: { slug: cat.slug, name: cat.name },
     dimensions: dims.map((d) => {
       const s = statsByDim.get(d.id);

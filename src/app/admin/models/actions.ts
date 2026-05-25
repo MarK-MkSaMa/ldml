@@ -29,9 +29,9 @@ function parseInput(formData: FormData) {
   return {
     name: get("name"),
     slug: get("slug"),
-    licenseId: Number(get("licenseId")),
     categoryId: Number(get("categoryId")),
     vendor: get("vendor") || null,
+    licenseText: get("licenseText") || null,
     homepageUrl: get("homepageUrl") || null,
     releasedAt: get("releasedAt") || null,
     status,

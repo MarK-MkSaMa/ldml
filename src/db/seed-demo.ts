@@ -6,14 +6,14 @@
  * 运行：npm run db:seed-demo
  */
 import { db } from "./index";
-import { licenses, categories, models, modelStats, dimensions } from "./schema";
+import { categories, models, modelStats, dimensions } from "./schema";
 import { eq, and } from "drizzle-orm";
 
 type DemoModel = {
   slug: string;
   name: string;
   vendor: string;
-  licenseSlug: "open-source" | "closed-source";
+  licenseText?: string;
   categorySlug: "text" | "image" | "video";
   status?: "listed" | "observing" | "draft";
   // 各维度的演示分数（slug -> 0..10 的均分）
@@ -21,12 +21,12 @@ type DemoModel = {
 };
 
 const DEMO: DemoModel[] = [
-  // 文字 / 云端模型
+  // 文字模型
   {
     slug: "gpt-5",
     name: "GPT-5",
     vendor: "OpenAI",
-    licenseSlug: "closed-source",
+    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -42,7 +42,7 @@ const DEMO: DemoModel[] = [
     slug: "claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
     vendor: "Anthropic",
-    licenseSlug: "closed-source",
+    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -58,7 +58,7 @@ const DEMO: DemoModel[] = [
     slug: "gemini-2-5-pro",
     name: "Gemini 2.5 Pro",
     vendor: "Google",
-    licenseSlug: "closed-source",
+    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -71,12 +71,12 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 文字 / 本地模型
+  // 文字模型
   {
     slug: "deepseek-v3-2",
     name: "DeepSeek V3.2",
     vendor: "DeepSeek",
-    licenseSlug: "open-source",
+    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -92,7 +92,7 @@ const DEMO: DemoModel[] = [
     slug: "qwen3-coder",
     name: "Qwen3 Coder",
     vendor: "Alibaba",
-    licenseSlug: "open-source",
+    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -108,7 +108,7 @@ const DEMO: DemoModel[] = [
     slug: "minimax-m2",
     name: "MiniMax M2",
     vendor: "MiniMax",
-    licenseSlug: "open-source",
+    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "observing",
     scores: {
@@ -118,12 +118,12 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生图 / 云端模型
+  // 生图模型
   {
     slug: "midjourney-v7",
     name: "Midjourney v7",
     vendor: "Midjourney",
-    licenseSlug: "closed-source",
+    licenseText: "Proprietary",
     categorySlug: "image",
     status: "listed",
     scores: {
@@ -134,12 +134,12 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生图 / 本地模型
+  // 生图模型
   {
     slug: "flux-1-1-pro",
     name: "FLUX 1.1 [pro]",
     vendor: "Black Forest Labs",
-    licenseSlug: "open-source",
+    licenseText: "Apache 2.0",
     categorySlug: "image",
     status: "listed",
     scores: {
@@ -150,12 +150,12 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生视频 / 云端模型
+  // 生视频模型
   {
     slug: "sora-2",
     name: "Sora 2",
     vendor: "OpenAI",
-    licenseSlug: "closed-source",
+    licenseText: "Proprietary",
     categorySlug: "video",
     status: "listed",
     scores: {
@@ -170,9 +170,7 @@ const DEMO: DemoModel[] = [
 async function seedDemo() {
   console.log("🌱 写入演示模型...\n");
 
-  // 预查 license / category / dimension 的 id
-  const allLicenses = await db.select().from(licenses);
-  const licenseId = new Map(allLicenses.map((l) => [l.slug, l.id]));
+  // 预查 category / dimension 的 id
   const allCategories = await db.select().from(categories);
   const categoryId = new Map(allCategories.map((c) => [c.slug, c.id]));
   const allDims = await db.select().from(dimensions);
@@ -184,10 +182,9 @@ async function seedDemo() {
   }
 
   for (const m of DEMO) {
-    const lid = licenseId.get(m.licenseSlug);
     const cid = categoryId.get(m.categorySlug);
-    if (!lid || !cid) {
-      console.warn(`  ⚠ 跳过 ${m.slug}：找不到 license/category`);
+    if (!cid) {
+      console.warn(`  ⚠ 跳过 ${m.slug}：找不到 category`);
       continue;
     }
 
@@ -198,7 +195,7 @@ async function seedDemo() {
         slug: m.slug,
         name: m.name,
         vendor: m.vendor,
-        licenseId: lid,
+        licenseText: m.licenseText ?? null,
         categoryId: cid,
         status: m.status ?? "listed",
         publishedAt: new Date(),
@@ -208,7 +205,7 @@ async function seedDemo() {
         set: {
           name: m.name,
           vendor: m.vendor,
-          licenseId: lid,
+          licenseText: m.licenseText ?? null,
           categoryId: cid,
           status: m.status ?? "listed",
           updatedAt: new Date(),

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  // 入口直接进云端文字榜
-  redirect("/rankings/closed-source/text");
+  // 入口直接进文字模型榜
+  redirect("/rankings/text");
 }

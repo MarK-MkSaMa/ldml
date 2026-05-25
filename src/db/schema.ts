@@ -94,15 +94,13 @@ export const models = pgTable(
   "models",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    licenseId: integer("license_id")
-      .notNull()
-      .references(() => licenses.id),
     categoryId: integer("category_id")
       .notNull()
       .references(() => categories.id),
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     vendor: text("vendor"), // OpenAI / Anthropic / ...
+    licenseText: text("license_text"), // Proprietary / MIT / Apache 2.0 / ...
     homepageUrl: text("homepage_url"),
     releasedAt: date("released_at"),
     status: text("status", { enum: modelStatusEnum })
@@ -115,7 +113,7 @@ export const models = pgTable(
   },
   (t) => [
     index("models_status_idx").on(t.status),
-    index("models_license_category_idx").on(t.licenseId, t.categoryId),
+    index("models_category_idx").on(t.categoryId),
   ],
 );
 
@@ -328,10 +326,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
 }));
 
-export const licensesRelations = relations(licenses, ({ many }) => ({
-  models: many(models),
-}));
-
 export const categoriesRelations = relations(categories, ({ many }) => ({
   models: many(models),
   dimensions: many(dimensions),
@@ -347,10 +341,6 @@ export const dimensionsRelations = relations(dimensions, ({ one, many }) => ({
 }));
 
 export const modelsRelations = relations(models, ({ one, many }) => ({
-  license: one(licenses, {
-    fields: [models.licenseId],
-    references: [licenses.id],
-  }),
   category: one(categories, {
     fields: [models.categoryId],
     references: [categories.id],

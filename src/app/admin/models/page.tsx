@@ -1,11 +1,11 @@
 /**
  * /admin/models —— 模型列表
  *
- * 支持 URL 参数筛选：?license=1&category=2&status=listed
+ * 支持 URL 参数筛选：?category=2&status=listed
  */
 import Link from "next/link";
 import { db } from "@/db";
-import { licenses, categories } from "@/db/schema";
+import { categories } from "@/db/schema";
 import { listModelsForAdmin } from "@/lib/admin-models";
 import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
@@ -25,27 +25,23 @@ const STATUS_LABELS: Record<ModelStatus, { name: string; cls: string }> = {
 export default async function AdminModelsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ license?: string; category?: string; status?: string }>;
+  searchParams: Promise<{ category?: string; status?: string }>;
 }) {
   const sp = await searchParams;
-  const licenseId = sp.license ? Number(sp.license) : undefined;
   const categoryId = sp.category ? Number(sp.category) : undefined;
   const status = sp.status && modelStatusEnum.includes(sp.status as ModelStatus)
     ? (sp.status as ModelStatus)
     : undefined;
 
-  const [allLicenses, allCategories, rows] = await Promise.all([
-    db.select().from(licenses).orderBy(asc(licenses.order)),
+  const [allCategories, rows] = await Promise.all([
     db.select().from(categories).orderBy(asc(categories.order)),
-    listModelsForAdmin({ licenseId, categoryId, status }),
+    listModelsForAdmin({ categoryId, status }),
   ]);
 
-  const licenseById = new Map(allLicenses.map((l) => [l.id, l]));
   const categoryById = new Map(allCategories.map((c) => [c.id, c]));
 
   // 当前 URL 构造工具：保留其他筛选条件
   const baseParams = new URLSearchParams();
-  if (licenseId !== undefined) baseParams.set("license", String(licenseId));
   if (categoryId !== undefined) baseParams.set("category", String(categoryId));
   if (status !== undefined) baseParams.set("status", status);
 
@@ -77,12 +73,6 @@ export default async function AdminModelsPage({
       {/* 筛选条 */}
       <div className="mb-6 flex flex-wrap gap-3">
         <FilterPicker
-          label="模型类型"
-          all={[{ id: undefined, name: "全部" }, ...allLicenses.map((l) => ({ id: l.id, name: l.name }))]}
-          current={licenseId}
-          buildUrl={(v) => urlWith({ license: v === undefined ? undefined : String(v) })}
-        />
-        <FilterPicker
           label="分类"
           all={[{ id: undefined, name: "全部" }, ...allCategories.map((c) => ({ id: c.id, name: c.name }))]}
           current={categoryId}
@@ -109,6 +99,7 @@ export default async function AdminModelsPage({
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">名称</th>
+                <th className="px-4 py-3 font-medium">开源协议</th>
                 <th className="px-4 py-3 font-medium">分类</th>
                 <th className="px-4 py-3 font-medium">状态</th>
                 <th className="px-4 py-3 font-medium">置顶</th>
@@ -117,7 +108,6 @@ export default async function AdminModelsPage({
             </thead>
             <tbody>
               {rows.map((m) => {
-                const lic = licenseById.get(m.licenseId);
                 const cat = categoryById.get(m.categoryId);
                 const label = STATUS_LABELS[m.status];
                 return (
@@ -137,7 +127,10 @@ export default async function AdminModelsPage({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
-                      {lic?.name ?? "?"} · {cat?.name ?? "?"}
+                      {m.licenseText || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
+                      {cat?.name ?? "?"}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${label.cls}`}>

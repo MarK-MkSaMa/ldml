@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DimensionInfo, ModelRow } from "@/lib/rankings";
 
-type SortKey = "name" | "overall" | "votes" | `dim:${number}`;
+type SortKey = "name" | "license" | "overall" | "votes" | `dim:${number}`;
 type SortOrder = "asc" | "desc";
 
 export function RankingTable({
@@ -154,11 +154,13 @@ export function RankingTable({
   const dimColWidth = 88; // px，分数列
   const overallColWidth = 88; // px，综合列
   const votesColWidth = 88; // px，票数列
+  const licenseColWidth = 120; // px，开源协议列
   const nameColWidth = 220; // px，模型列
 
   // 计算表格最小宽度（防止挤压；超出时父容器会出滚动条）
   const minTableWidth =
     nameColWidth +
+    licenseColWidth +
     dimensions.length * dimColWidth +
     (showOverall ? overallColWidth : 0) +
     votesColWidth;
@@ -246,6 +248,7 @@ export function RankingTable({
       >
         <colgroup>
           <col style={{ width: `${nameColWidth}px` }} />
+          <col style={{ width: `${licenseColWidth}px` }} />
           {dimensions.map((d) => (
             <col key={d.id} style={{ width: `${dimColWidth}px` }} />
           ))}
@@ -256,6 +259,9 @@ export function RankingTable({
           <tr className="border-b border-zinc-200 text-left dark:border-zinc-800">
             <Th onClick={() => onHeaderClick("name")} sort={sort} myKey="name" align="left">
               模型
+            </Th>
+            <Th onClick={() => onHeaderClick("license")} sort={sort} myKey="license" align="left">
+              开源协议
             </Th>
             {dimensions.map((d) => (
               <Th
@@ -314,6 +320,11 @@ export function RankingTable({
                     {m.vendor}
                   </div>
                 )}
+              </td>
+              <td className="px-3 py-3 text-xs text-zinc-500">
+                <span className="block truncate" title={m.licenseText ?? undefined}>
+                  {m.licenseText || "—"}
+                </span>
               </td>
               {dimensions.map((d) => {
                 const s = m.scores[d.id];
@@ -427,6 +438,11 @@ function MobileCard({
           {m.vendor && (
             <div className="truncate text-xs text-zinc-500">{m.vendor}</div>
           )}
+          {m.licenseText && (
+            <div className="mt-1 inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+              {m.licenseText}
+            </div>
+          )}
         </div>
         {showOverall && m.overall !== null && (
           <div className="shrink-0 text-right">
@@ -518,6 +534,7 @@ function Th({
 
 function getValue(row: ModelRow, key: SortKey): string | number | null {
   if (key === "name") return row.name;
+  if (key === "license") return row.licenseText ?? "";
   if (key === "overall") return row.overall;
   if (key === "votes") return row.totalVotes;
   if (key.startsWith("dim:")) {

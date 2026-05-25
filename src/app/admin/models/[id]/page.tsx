@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { licenses, categories } from "@/db/schema";
+import { categories } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { getModelByIdForAdmin } from "@/lib/admin-models";
 import { ModelForm } from "../model-form";
@@ -16,9 +16,8 @@ export default async function EditModelPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [m, licenseRows, categoryRows] = await Promise.all([
+  const [m, categoryRows] = await Promise.all([
     getModelByIdForAdmin(id),
-    db.select().from(licenses).orderBy(asc(licenses.order)),
     db.select().from(categories).orderBy(asc(categories.order)),
   ]);
   if (!m) notFound();
@@ -40,15 +39,14 @@ export default async function EditModelPage({
         initial={{
           name: m.name,
           slug: m.slug,
-          licenseId: m.licenseId,
           categoryId: m.categoryId,
           vendor: m.vendor ?? "",
+          licenseText: m.licenseText ?? "",
           homepageUrl: m.homepageUrl ?? "",
           releasedAt: m.releasedAt ?? "",
           status: m.status,
           pinned: m.pinned,
         }}
-        licenses={licenseRows}
         categories={categoryRows}
         action={boundAction}
         submitLabel="保存修改"

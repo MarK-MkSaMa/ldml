@@ -18,9 +18,9 @@ const STATUS_LABEL: Record<ModelStatus, string> = {
 export type ModelFormInitial = {
   name: string;
   slug: string;
-  licenseId: number;
   categoryId: number;
   vendor: string;
+  licenseText: string;
   homepageUrl: string;
   releasedAt: string;
   status: ModelStatus;
@@ -30,9 +30,9 @@ export type ModelFormInitial = {
 const EMPTY: ModelFormInitial = {
   name: "",
   slug: "",
-  licenseId: 0,
   categoryId: 0,
   vendor: "",
+  licenseText: "",
   homepageUrl: "",
   releasedAt: "",
   status: "draft",
@@ -41,13 +41,11 @@ const EMPTY: ModelFormInitial = {
 
 export function ModelForm({
   initial,
-  licenses,
   categories,
   action,
   submitLabel = "保存",
 }: {
   initial?: Partial<ModelFormInitial>;
-  licenses: { id: number; name: string }[];
   categories: { id: number; name: string }[];
   action: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
@@ -55,7 +53,6 @@ export function ModelForm({
   const [state, setState] = useState<ModelFormInitial>({
     ...EMPTY,
     ...initial,
-    licenseId: initial?.licenseId ?? licenses[0]?.id ?? 0,
     categoryId: initial?.categoryId ?? categories[0]?.id ?? 0,
   });
   const [pending, setPending] = useState(false);
@@ -103,38 +100,21 @@ export function ModelForm({
         />
       </Row>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Row label="模型类型" required>
-          <select
-            name="licenseId"
-            value={state.licenseId || ""}
-            onChange={(e) => update("licenseId", Number(e.target.value))}
-            required
-            className={inputCls}
-          >
-            {licenses.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </Row>
-        <Row label="分类" required>
-          <select
-            name="categoryId"
-            value={state.categoryId || ""}
-            onChange={(e) => update("categoryId", Number(e.target.value))}
-            required
-            className={inputCls}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Row>
-      </div>
+      <Row label="分类" required>
+        <select
+          name="categoryId"
+          value={state.categoryId || ""}
+          onChange={(e) => update("categoryId", Number(e.target.value))}
+          required
+          className={inputCls}
+        >
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </Row>
 
       <Row label="厂商">
         <input
@@ -144,6 +124,17 @@ export function ModelForm({
           maxLength={60}
           className={inputCls}
           placeholder="OpenAI / Anthropic / Alibaba ..."
+        />
+      </Row>
+
+      <Row label="开源协议">
+        <input
+          name="licenseText"
+          value={state.licenseText}
+          onChange={(e) => update("licenseText", e.target.value)}
+          maxLength={80}
+          className={inputCls}
+          placeholder="Proprietary / MIT / Apache 2.0 ..."
         />
       </Row>
 

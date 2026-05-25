@@ -69,10 +69,10 @@ export default async function ModelDetailPage({
         {/* 面包屑 */}
         <nav className="mb-6 text-sm text-zinc-500">
           <Link
-            href={`/rankings/${model.license.slug}/${model.category.slug}`}
+            href={`/rankings/${model.category.slug}`}
             className="hover:text-zinc-900 dark:hover:text-zinc-100"
           >
-            ← {model.license.name} · {model.category.name}
+            ← {model.category.name}
           </Link>
         </nav>
 
@@ -86,9 +86,10 @@ export default async function ModelDetailPage({
               </span>
             )}
           </div>
-          {model.vendor && (
-            <p className="text-sm text-zinc-500">{model.vendor}</p>
-          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
+            {model.vendor && <span>{model.vendor}</span>}
+            {model.licenseText && <span>开源协议：{model.licenseText}</span>}
+          </div>
           {model.releasedAt && (
             <div className="mt-3 text-xs text-zinc-500">
               发布：{model.releasedAt}
