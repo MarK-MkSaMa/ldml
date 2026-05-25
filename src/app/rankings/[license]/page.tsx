@@ -1,7 +1,9 @@
 /**
  * 排行榜主页
- * 路径：/rankings/[category]
- *   category: text | image | video
+ * 路径：/rankings/[license]
+ *
+ * 注意：目录名沿用 [license] 是为了兼容旧的 /rankings/[license]/[category]
+ * 路由结构；这里的单段参数实际表示 category：text | image | video。
  */
 import { notFound } from "next/navigation";
 import { asc } from "drizzle-orm";
@@ -9,9 +11,9 @@ import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { getCurrentUserFresh } from "@/lib/current-user";
 import { getRanking } from "@/lib/rankings";
-import { RankingTable } from "../[license]/[category]/ranking-table";
-import { ObservingSection } from "../[license]/[category]/observing-section";
-import { RankingsShell } from "../[license]/[category]/rankings-shell";
+import { RankingTable } from "./[category]/ranking-table";
+import { ObservingSection } from "./[category]/observing-section";
+import { RankingsShell } from "./[category]/rankings-shell";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -21,9 +23,9 @@ export const dynamic = "force-dynamic";
 export default async function RankingPage({
   params,
 }: {
-  params: Promise<{ category: string }>;
+  params: Promise<{ license: string }>;
 }) {
-  const { category } = await params;
+  const { license: category } = await params;
   const [data, categoryTabs] = await Promise.all([
     getRanking(category),
     db
