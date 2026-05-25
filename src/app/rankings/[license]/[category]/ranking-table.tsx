@@ -151,11 +151,11 @@ export function RankingTable({
 
   // 列宽预设
   // 模型列固定，分数 / 综合 / 票数列固定为较窄的数字列
-  const dimColWidth = 88; // px，分数列
-  const overallColWidth = 88; // px，综合列
-  const votesColWidth = 88; // px，票数列
-  const licenseColWidth = 120; // px，开源协议列
-  const nameColWidth = 220; // px，模型列
+  const dimColWidth = 112; // px，分数列，给 5 字维度留出单行空间
+  const overallColWidth = 96; // px，综合列
+  const votesColWidth = 96; // px，票数列
+  const licenseColWidth = 144; // px，开源协议列
+  const nameColWidth = 260; // px，模型列
 
   // 计算表格最小宽度（防止挤压；超出时父容器会出滚动条）
   const minTableWidth =

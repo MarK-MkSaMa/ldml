@@ -47,11 +47,11 @@ export default async function RankingPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader maxWidth="max-w-6xl" />
+      <SiteHeader maxWidth="max-w-[96rem]" />
 
       <AnnouncementBanner />
 
-      <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+      <div className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
         <RankingsShell
           category={category}
           hintText={hintText}

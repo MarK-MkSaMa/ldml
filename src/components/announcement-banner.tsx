@@ -26,7 +26,7 @@ export async function AnnouncementBanner() {
 
   return (
     <div className="border-b border-blue-200 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/30">
-      <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 px-6 py-3">
+      <div className="mx-auto flex max-w-[96rem] items-start justify-between gap-4 px-6 py-3">
         <div className="flex min-w-0 flex-1 items-baseline gap-3">
           <span className="shrink-0 rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white">
             公告
