@@ -23,11 +23,7 @@ export type ModelInput = {
   licenseId: number;
   categoryId: number;
   vendor?: string | null;
-  logoUrl?: string | null;
   homepageUrl?: string | null;
-  description?: string | null;
-  contextLength?: number | null;
-  params?: string | null;
   releasedAt?: string | null; // 'YYYY-MM-DD'
   status: ModelStatus;
   pinned?: boolean;
@@ -37,7 +33,6 @@ const NAME_MAX = 100;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 const SLUG_MAX = 80;
 const VENDOR_MAX = 60;
-const DESC_MAX = 2000;
 
 function validate(input: ModelInput): void {
   if (!input.name?.trim()) throw new Error("名称不能为空");
@@ -50,8 +45,6 @@ function validate(input: ModelInput): void {
     throw new Error("slug 只能包含小写字母、数字和连字符，且以字母或数字开头");
   if (input.vendor && input.vendor.length > VENDOR_MAX)
     throw new Error(`厂商超过 ${VENDOR_MAX} 字符`);
-  if (input.description && input.description.length > DESC_MAX)
-    throw new Error(`描述超过 ${DESC_MAX} 字符`);
   if (!modelStatusEnum.includes(input.status))
     throw new Error("非法的状态值");
 }
@@ -84,11 +77,7 @@ export async function createModelAdmin(input: ModelInput): Promise<AdminModelRow
       licenseId: input.licenseId,
       categoryId: input.categoryId,
       vendor: input.vendor?.trim() || null,
-      logoUrl: input.logoUrl?.trim() || null,
       homepageUrl: input.homepageUrl?.trim() || null,
-      description: input.description?.trim() || null,
-      contextLength: input.contextLength ?? null,
-      params: input.params?.trim() || null,
       releasedAt: input.releasedAt || null,
       status: input.status,
       pinned: input.pinned ?? false,
@@ -125,11 +114,7 @@ export async function updateModelAdmin(
       licenseId: input.licenseId,
       categoryId: input.categoryId,
       vendor: input.vendor?.trim() || null,
-      logoUrl: input.logoUrl?.trim() || null,
       homepageUrl: input.homepageUrl?.trim() || null,
-      description: input.description?.trim() || null,
-      contextLength: input.contextLength ?? null,
-      params: input.params?.trim() || null,
       releasedAt: input.releasedAt || null,
       status: input.status,
       pinned: input.pinned ?? false,

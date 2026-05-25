@@ -103,11 +103,7 @@ export const models = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     vendor: text("vendor"), // OpenAI / Anthropic / ...
-    logoUrl: text("logo_url"),
     homepageUrl: text("homepage_url"),
-    description: text("description"),
-    contextLength: integer("context_length"), // 文字模型用
-    params: text("params"), // 参数量描述 "70B"
     releasedAt: date("released_at"),
     status: text("status", { enum: modelStatusEnum })
       .notNull()

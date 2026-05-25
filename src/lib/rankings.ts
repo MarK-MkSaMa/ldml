@@ -28,9 +28,6 @@ export type ModelRow = {
   slug: string;
   name: string;
   vendor: string | null;
-  description: string | null;
-  contextLength: number | null;
-  params: string | null;
   status: "draft" | "observing" | "listed" | "archived";
   pinned: boolean;
   publishedAt: Date | null;
@@ -119,9 +116,6 @@ async function getRankingUncached(
       slug: m.slug,
       name: m.name,
       vendor: m.vendor,
-      description: m.description,
-      contextLength: m.contextLength,
-      params: m.params,
       status: m.status,
       pinned: m.pinned,
       publishedAt: m.publishedAt,

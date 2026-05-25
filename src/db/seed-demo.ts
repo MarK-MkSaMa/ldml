@@ -15,9 +15,6 @@ type DemoModel = {
   vendor: string;
   licenseSlug: "open-source" | "closed-source";
   categorySlug: "text" | "image" | "video";
-  contextLength?: number;
-  params?: string;
-  description?: string;
   status?: "listed" | "observing" | "draft";
   // 各维度的演示分数（slug -> 0..10 的均分）
   scores: Record<string, { avg: number; count: number }>;
@@ -31,8 +28,6 @@ const DEMO: DemoModel[] = [
     vendor: "OpenAI",
     licenseSlug: "closed-source",
     categorySlug: "text",
-    contextLength: 256000,
-    description: "OpenAI 旗舰文字模型",
     status: "listed",
     scores: {
       code: { avg: 9.2, count: 412 },
@@ -49,8 +44,6 @@ const DEMO: DemoModel[] = [
     vendor: "Anthropic",
     licenseSlug: "closed-source",
     categorySlug: "text",
-    contextLength: 200000,
-    description: "Anthropic 主力模型，代码与 Agent 任务表现强劲",
     status: "listed",
     scores: {
       code: { avg: 9.5, count: 480 },
@@ -67,7 +60,6 @@ const DEMO: DemoModel[] = [
     vendor: "Google",
     licenseSlug: "closed-source",
     categorySlug: "text",
-    contextLength: 2000000,
     status: "listed",
     scores: {
       code: { avg: 8.6, count: 320 },
@@ -86,7 +78,6 @@ const DEMO: DemoModel[] = [
     vendor: "DeepSeek",
     licenseSlug: "open-source",
     categorySlug: "text",
-    params: "671B (MoE 37B 激活)",
     status: "listed",
     scores: {
       code: { avg: 8.9, count: 520 },
@@ -103,7 +94,6 @@ const DEMO: DemoModel[] = [
     vendor: "Alibaba",
     licenseSlug: "open-source",
     categorySlug: "text",
-    params: "480B",
     status: "listed",
     scores: {
       code: { avg: 9.0, count: 340 },
@@ -210,9 +200,6 @@ async function seedDemo() {
         vendor: m.vendor,
         licenseId: lid,
         categoryId: cid,
-        contextLength: m.contextLength,
-        params: m.params,
-        description: m.description,
         status: m.status ?? "listed",
         publishedAt: new Date(),
       })
@@ -223,9 +210,6 @@ async function seedDemo() {
           vendor: m.vendor,
           licenseId: lid,
           categoryId: cid,
-          contextLength: m.contextLength,
-          params: m.params,
-          description: m.description,
           status: m.status ?? "listed",
           updatedAt: new Date(),
         },

@@ -89,18 +89,11 @@ export default async function ModelDetailPage({
           {model.vendor && (
             <p className="text-sm text-zinc-500">{model.vendor}</p>
           )}
-          {model.description && (
-            <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-              {model.description}
-            </p>
+          {model.releasedAt && (
+            <div className="mt-3 text-xs text-zinc-500">
+              发布：{model.releasedAt}
+            </div>
           )}
-          <div className="mt-3 flex flex-wrap gap-4 text-xs text-zinc-500">
-            {model.params && <span>参数量：{model.params}</span>}
-            {model.contextLength && (
-              <span>上下文：{model.contextLength.toLocaleString()}</span>
-            )}
-            {model.releasedAt && <span>发布：{model.releasedAt}</span>}
-          </div>
         </div>
 
         {/* 当前评分 */}

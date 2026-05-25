@@ -21,11 +21,7 @@ export type ModelFormInitial = {
   licenseId: number;
   categoryId: number;
   vendor: string;
-  logoUrl: string;
   homepageUrl: string;
-  description: string;
-  contextLength: string; // 表单里都是字符串
-  params: string;
   releasedAt: string;
   status: ModelStatus;
   pinned: boolean;
@@ -37,11 +33,7 @@ const EMPTY: ModelFormInitial = {
   licenseId: 0,
   categoryId: 0,
   vendor: "",
-  logoUrl: "",
   homepageUrl: "",
-  description: "",
-  contextLength: "",
-  params: "",
   releasedAt: "",
   status: "draft",
   pinned: false,
@@ -155,60 +147,16 @@ export function ModelForm({
         />
       </Row>
 
-      <Row label="描述" hint="一句话简介，会显示在详情页">
-        <textarea
-          name="description"
-          value={state.description}
-          onChange={(e) => update("description", e.target.value)}
-          maxLength={2000}
-          rows={3}
+      <Row label="官网">
+        <input
+          name="homepageUrl"
+          type="url"
+          value={state.homepageUrl}
+          onChange={(e) => update("homepageUrl", e.target.value)}
           className={inputCls}
+          placeholder="https://..."
         />
       </Row>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Row label="参数量" hint="比如 70B / 671B (MoE)">
-          <input
-            name="params"
-            value={state.params}
-            onChange={(e) => update("params", e.target.value)}
-            className={inputCls}
-          />
-        </Row>
-        <Row label="上下文长度" hint="整数（token 数）">
-          <input
-            name="contextLength"
-            type="number"
-            min={0}
-            value={state.contextLength}
-            onChange={(e) => update("contextLength", e.target.value)}
-            className={inputCls}
-          />
-        </Row>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Row label="官网">
-          <input
-            name="homepageUrl"
-            type="url"
-            value={state.homepageUrl}
-            onChange={(e) => update("homepageUrl", e.target.value)}
-            className={inputCls}
-            placeholder="https://..."
-          />
-        </Row>
-        <Row label="Logo URL">
-          <input
-            name="logoUrl"
-            type="url"
-            value={state.logoUrl}
-            onChange={(e) => update("logoUrl", e.target.value)}
-            className={inputCls}
-            placeholder="https://..."
-          />
-        </Row>
-      </div>
 
       <Row label="发布日期">
         <input

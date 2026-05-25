@@ -16,9 +16,6 @@ export type ModelDetail = {
   slug: string;
   name: string;
   vendor: string | null;
-  description: string | null;
-  contextLength: number | null;
-  params: string | null;
   releasedAt: string | null;
   status: "draft" | "observing" | "listed" | "archived";
   license: { slug: string; name: string };
@@ -41,9 +38,6 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
       slug: models.slug,
       name: models.name,
       vendor: models.vendor,
-      description: models.description,
-      contextLength: models.contextLength,
-      params: models.params,
       releasedAt: models.releasedAt,
       status: models.status,
       licenseId: models.licenseId,
@@ -81,9 +75,6 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     slug: m.slug,
     name: m.name,
     vendor: m.vendor,
-    description: m.description,
-    contextLength: m.contextLength,
-    params: m.params,
     releasedAt: m.releasedAt,
     status: m.status,
     license: { slug: lic.slug, name: lic.name },
