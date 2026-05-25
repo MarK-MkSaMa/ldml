@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DimensionInfo, ModelRow } from "@/lib/rankings";
 
-type SortKey = "name" | "license" | "overall" | "votes" | `dim:${number}`;
+type SortKey = "name" | "overall" | "votes" | `dim:${number}`;
 type SortOrder = "asc" | "desc";
 
 export function RankingTable({
@@ -154,13 +154,11 @@ export function RankingTable({
   const dimColWidth = 112; // px，分数列，给 5 字维度留出单行空间
   const overallColWidth = 96; // px，综合列
   const votesColWidth = 96; // px，票数列
-  const licenseColWidth = 144; // px，开源协议列
-  const nameColWidth = 260; // px，模型列
+  const nameColWidth = 320; // px，模型列
 
   // 计算表格最小宽度（防止挤压；超出时父容器会出滚动条）
   const minTableWidth =
     nameColWidth +
-    licenseColWidth +
     dimensions.length * dimColWidth +
     (showOverall ? overallColWidth : 0) +
     votesColWidth;
@@ -248,7 +246,6 @@ export function RankingTable({
       >
         <colgroup>
           <col style={{ width: `${nameColWidth}px` }} />
-          <col style={{ width: `${licenseColWidth}px` }} />
           {dimensions.map((d) => (
             <col key={d.id} style={{ width: `${dimColWidth}px` }} />
           ))}
@@ -259,9 +256,6 @@ export function RankingTable({
           <tr className="border-b border-zinc-200 text-left dark:border-zinc-800">
             <Th onClick={() => onHeaderClick("name")} sort={sort} myKey="name" align="left">
               模型
-            </Th>
-            <Th onClick={() => onHeaderClick("license")} sort={sort} myKey="license" align="left">
-              开源协议
             </Th>
             {dimensions.map((d) => (
               <Th
@@ -315,16 +309,14 @@ export function RankingTable({
                 <div className="truncate font-medium" title={m.name}>
                   {m.name}
                 </div>
-                {m.vendor && (
-                  <div className="truncate text-xs text-zinc-500" title={m.vendor}>
-                    {m.vendor}
+                {(m.vendor || m.licenseText) && (
+                  <div
+                    className="truncate text-xs text-zinc-500"
+                    title={[m.vendor, m.licenseText].filter(Boolean).join(" · ")}
+                  >
+                    {[m.vendor, m.licenseText].filter(Boolean).join(" · ")}
                   </div>
                 )}
-              </td>
-              <td className="px-3 py-3 text-xs text-zinc-500">
-                <span className="block truncate" title={m.licenseText ?? undefined}>
-                  {m.licenseText || "—"}
-                </span>
               </td>
               {dimensions.map((d) => {
                 const s = m.scores[d.id];
@@ -534,7 +526,6 @@ function Th({
 
 function getValue(row: ModelRow, key: SortKey): string | number | null {
   if (key === "name") return row.name;
-  if (key === "license") return row.licenseText ?? "";
   if (key === "overall") return row.overall;
   if (key === "votes") return row.totalVotes;
   if (key.startsWith("dim:")) {
