@@ -16,8 +16,8 @@ import { licenses, categories, dimensions } from "./schema";
 // ---------- 数据定义 ----------
 
 const LICENSES = [
-  { slug: "open-source", name: "开源", order: 1 },
-  { slug: "closed-source", name: "非开源", order: 2 },
+  { slug: "open-source", name: "本地模型", order: 1 },
+  { slug: "closed-source", name: "云端模型", order: 2 },
 ] as const;
 
 const CATEGORIES = [

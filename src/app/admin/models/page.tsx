@@ -77,7 +77,7 @@ export default async function AdminModelsPage({
       {/* 筛选条 */}
       <div className="mb-6 flex flex-wrap gap-3">
         <FilterPicker
-          label="开源属性"
+          label="模型类型"
           all={[{ id: undefined, name: "全部" }, ...allLicenses.map((l) => ({ id: l.id, name: l.name }))]}
           current={licenseId}
           buildUrl={(v) => urlWith({ license: v === undefined ? undefined : String(v) })}

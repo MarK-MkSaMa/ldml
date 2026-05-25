@@ -21,7 +21,7 @@ type DemoModel = {
 };
 
 const DEMO: DemoModel[] = [
-  // 文字 / 非开源
+  // 文字 / 云端模型
   {
     slug: "gpt-5",
     name: "GPT-5",
@@ -71,7 +71,7 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 文字 / 开源
+  // 文字 / 本地模型
   {
     slug: "deepseek-v3-2",
     name: "DeepSeek V3.2",
@@ -118,7 +118,7 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生图 / 非开源
+  // 生图 / 云端模型
   {
     slug: "midjourney-v7",
     name: "Midjourney v7",
@@ -134,7 +134,7 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生图 / 开源
+  // 生图 / 本地模型
   {
     slug: "flux-1-1-pro",
     name: "FLUX 1.1 [pro]",
@@ -150,7 +150,7 @@ const DEMO: DemoModel[] = [
     },
   },
 
-  // 生视频 / 非开源
+  // 生视频 / 云端模型
   {
     slug: "sora-2",
     name: "Sora 2",

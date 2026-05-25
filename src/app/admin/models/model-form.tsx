@@ -104,7 +104,7 @@ export function ModelForm({
       </Row>
 
       <div className="grid grid-cols-2 gap-4">
-        <Row label="开源属性" required>
+        <Row label="模型类型" required>
           <select
             name="licenseId"
             value={state.licenseId || ""}

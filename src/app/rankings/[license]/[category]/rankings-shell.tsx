@@ -16,8 +16,8 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 const LICENSE_TABS = [
-  { slug: "closed-source", name: "非开源" },
-  { slug: "open-source", name: "开源" },
+  { slug: "closed-source", name: "云端模型" },
+  { slug: "open-source", name: "本地模型" },
 ];
 
 export type CategoryTab = { slug: string; name: string };
