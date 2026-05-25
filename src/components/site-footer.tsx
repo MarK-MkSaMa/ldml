@@ -8,7 +8,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="border-t border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 text-xs text-zinc-500 sm:flex-row">
+      <div className="mx-auto flex max-w-[96rem] flex-col items-center justify-between gap-3 px-6 py-6 text-xs text-zinc-500 sm:flex-row">
         <div>
           LDML · Linux DO 大模型排行榜 · 由社区用户投票产生
         </div>
