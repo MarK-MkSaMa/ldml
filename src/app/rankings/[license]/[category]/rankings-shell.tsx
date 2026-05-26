@@ -10,7 +10,7 @@
  *   3. transition 进行中时，把 children 换成 spinner
  *   4. 路由切换完成 → 新 props 进来 → 清空 pending state
  */
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 export type CategoryTab = { slug: string; name: string };
@@ -30,11 +30,7 @@ export function RankingsShell({
   const [isPending, startTransition] = useTransition();
   const [pendingCategory, setPendingCategory] = useState<string | null>(null);
 
-  useEffect(() => {
-    setPendingCategory(null);
-  }, [category]);
-
-  const displayCategory = pendingCategory ?? category;
+  const displayCategory = pendingCategory && pendingCategory !== category ? pendingCategory : category;
 
   function navigate(nextCategory: string) {
     if (nextCategory === displayCategory) return;
@@ -72,20 +68,23 @@ export function RankingsShell({
         {hintText}
       </div>
 
-      {/* 内容区：pending 时只换这一块 */}
-      {isPending ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-sm text-zinc-500">
-            <span
-              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100"
-              aria-hidden
-            />
-            <span>加载中…</span>
-          </div>
+      {/* 内容区：pending 时保留旧内容高度，避免切换分类时页面塌陷抖动 */}
+      <div className="relative">
+        <div className={isPending ? "pointer-events-none opacity-50" : undefined}>
+          {children}
         </div>
-      ) : (
-        children
-      )}
+        {isPending && (
+          <div className="absolute inset-x-0 top-0 flex items-center justify-center py-20">
+            <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-sm text-zinc-500 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+              <span
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100"
+                aria-hidden
+              />
+              <span>加载中…</span>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }
