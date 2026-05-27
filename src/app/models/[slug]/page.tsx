@@ -77,23 +77,36 @@ export default async function ModelDetailPage({
         </nav>
 
         {/* 基本信息 */}
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">{model.name}</h1>
-            {model.status === "observing" && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
-                观察区
-              </span>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight">{model.name}</h1>
+              {model.status === "observing" && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                  观察区
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
+              {model.vendor && <span>{model.vendor}</span>}
+              {model.licenseText && <span>开源协议：{model.licenseText}</span>}
+            </div>
+            {model.releasedAt && (
+              <div className="mt-3 text-xs text-zinc-500">
+                发布：{model.releasedAt}
+              </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
-            {model.vendor && <span>{model.vendor}</span>}
-            {model.licenseText && <span>开源协议：{model.licenseText}</span>}
-          </div>
-          {model.releasedAt && (
-            <div className="mt-3 text-xs text-zinc-500">
-              发布：{model.releasedAt}
-            </div>
+
+          {model.homepageUrl && (
+            <a
+              href={model.homepageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
+            >
+              前往查看
+            </a>
           )}
         </div>
 
@@ -138,7 +151,7 @@ export default async function ModelDetailPage({
           <div className="mb-4">
             <h2 className="text-lg font-semibold">我的评分</h2>
             <p className="text-sm text-zinc-500">
-              对你熟悉的维度评 1-10 分；不熟的维度可以跳过。点"撤回"可以删除已评分。
+              对你熟悉的维度评 1-10 分；不熟的维度可以跳过。点&quot;撤回&quot;可以删除已评分。
             </p>
           </div>
           <RatingPanel

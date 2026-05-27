@@ -16,6 +16,7 @@ export type ModelDetail = {
   name: string;
   vendor: string | null;
   licenseText: string | null;
+  homepageUrl: string | null;
   releasedAt: string | null;
   status: "draft" | "observing" | "listed" | "archived";
   category: { slug: string; name: string };
@@ -38,6 +39,7 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
       name: models.name,
       vendor: models.vendor,
       licenseText: models.licenseText,
+      homepageUrl: models.homepageUrl,
       releasedAt: models.releasedAt,
       status: models.status,
       categoryId: models.categoryId,
@@ -72,6 +74,7 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     name: m.name,
     vendor: m.vendor,
     licenseText: m.licenseText,
+    homepageUrl: m.homepageUrl,
     releasedAt: m.releasedAt,
     status: m.status,
     category: { slug: cat.slug, name: cat.name },
