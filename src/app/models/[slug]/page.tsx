@@ -52,13 +52,13 @@ export default async function ModelDetailPage({
     notCommentableReason = `你的 Linux DO 信任等级为 ${user.trustLevel}，需要达到 1 级才能评论`;
   }
 
-  // 综合分
-  const weightedScores = model.dimensions
-    .map((d) => d.weighted)
+  // 综合分：与排行榜一致，使用各维度 avg_score 的简单平均
+  const avgScores = model.dimensions
+    .map((d) => d.avg)
     .filter((v): v is number => v !== null);
   const overall =
-    weightedScores.length > 0
-      ? weightedScores.reduce((a, b) => a + b, 0) / weightedScores.length
+    avgScores.length > 0
+      ? avgScores.reduce((a, b) => a + b, 0) / avgScores.length
       : null;
 
   return (
