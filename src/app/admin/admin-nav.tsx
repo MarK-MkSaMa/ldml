@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/admin", label: "仪表盘", exact: true },
   { href: "/admin/announcements", label: "公告管理" },
   { href: "/admin/models", label: "模型管理" },
+  { href: "/admin/votes", label: "投票管理" },
   { href: "/admin/categories", label: "分类管理" },
   { href: "/admin/dimensions", label: "维度管理" },
   { href: "/admin/users", label: "用户管理" },

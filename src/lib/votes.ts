@@ -179,7 +179,7 @@ export async function withdrawVote(
  * 展示用 voteCount 仍是原始票数（用户更熟悉的概念），
  * weightedScore 用于排行。
  */
-async function recomputeModelStat(modelId: string, dimensionId: number): Promise<void> {
+export async function recomputeModelStat(modelId: string, dimensionId: number): Promise<void> {
   const now = new Date();
 
   // 1. 拉本 (model, dim) 的所有票，在内存里做加权
