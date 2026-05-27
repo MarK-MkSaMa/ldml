@@ -94,7 +94,7 @@ export function RankingTable({
     [weights, dimensions],
   );
 
-  // 用权重重算每个模型的综合分（覆盖 m.overall）
+  // 用权重按 avg_score 重算每个模型的综合分（覆盖 m.overall）
   const weightedModels = useMemo<ModelRow[]>(() => {
     if (!hasCustomWeights) return models;
     return models.map((m) => {
@@ -102,10 +102,10 @@ export function RankingTable({
       let totalWeight = 0;
       for (const d of dimensions) {
         const s = m.scores[d.id];
-        if (s?.weighted == null) continue;
+        if (s?.avg == null) continue;
         const w = getWeight(d.id);
         if (w <= 0) continue;
-        weightedSum += s.weighted * w;
+        weightedSum += s.avg * w;
         totalWeight += w;
       }
       return {

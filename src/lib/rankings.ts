@@ -33,7 +33,7 @@ export type ModelRow = {
   publishedAt: Date | null;
   // dimensionId -> { avg, weighted, count }
   scores: Record<number, { avg: number | null; weighted: number | null; count: number }>;
-  // 综合分（各维度 weighted 的简单平均，null 不计入）
+  // 综合分（各维度 avg 的简单平均，null 不计入）
   overall: number | null;
   // 总票数（最大维度票数，作为粗略指标）
   totalVotes: number;
@@ -90,16 +90,16 @@ async function getRankingUncached(
   const enrich = (m: (typeof modelRows)[number]): ModelRow => {
     const myStats = statsByModel.get(m.id) ?? [];
     const scores: ModelRow["scores"] = {};
-    let weightedSum = 0;
-    let weightedCount = 0;
+    let avgSum = 0;
+    let avgCount = 0;
     let totalVotes = 0;
     for (const s of myStats) {
       const avg = s.avgScore !== null ? Number(s.avgScore) : null;
       const weighted = s.weightedScore !== null ? Number(s.weightedScore) : null;
       scores[s.dimensionId] = { avg, weighted, count: s.voteCount };
-      if (weighted !== null) {
-        weightedSum += weighted;
-        weightedCount++;
+      if (avg !== null) {
+        avgSum += avg;
+        avgCount++;
       }
       if (s.voteCount > totalVotes) totalVotes = s.voteCount;
     }
@@ -113,7 +113,7 @@ async function getRankingUncached(
       pinned: m.pinned,
       publishedAt: m.publishedAt,
       scores,
-      overall: weightedCount > 0 ? weightedSum / weightedCount : null,
+      overall: avgCount > 0 ? avgSum / avgCount : null,
       totalVotes,
     };
   };
