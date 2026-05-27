@@ -151,10 +151,10 @@ export function RankingTable({
 
   // 列宽预设
   // 模型列固定，分数 / 综合 / 票数列固定为较窄的数字列
-  const dimColWidth = 112; // px，分数列，给 5 字维度留出单行空间
-  const overallColWidth = 96; // px，综合列
-  const votesColWidth = 96; // px，票数列
-  const nameColWidth = 320; // px，模型列
+  const dimColWidth = 104; // px，分数列，尽量避免 5 字维度换行
+  const overallColWidth = 72; // px，综合列
+  const votesColWidth = 72; // px，票数列
+  const nameColWidth = 240; // px，模型列
 
   // 计算表格最小宽度（防止挤压；超出时父容器会出滚动条）
   const minTableWidth =
@@ -305,7 +305,7 @@ export function RankingTable({
               onMouseEnter={() => router.prefetch(`/models/${m.slug}`)}
               className="cursor-pointer border-b border-zinc-100 transition-colors hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none dark:border-zinc-900 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-900/40"
             >
-              <td className="px-3 py-3">
+              <td className="py-3 pr-2 pl-2">
                 <div className="truncate font-medium" title={m.name}>
                   {m.name}
                 </div>
@@ -321,17 +321,17 @@ export function RankingTable({
               {dimensions.map((d) => {
                 const s = m.scores[d.id];
                 return (
-                  <td key={d.id} className="px-3 py-3 text-right tabular-nums">
+                  <td key={d.id} className="py-3 pr-2 pl-1 text-right tabular-nums">
                     {s?.avg !== null && s?.avg !== undefined ? s.avg.toFixed(1) : "—"}
                   </td>
                 );
               })}
               {showOverall && (
-                <td className="px-3 py-3 text-right font-semibold tabular-nums">
+                <td className="py-3 pr-2 pl-1 text-right font-semibold tabular-nums">
                   {m.overall !== null ? m.overall.toFixed(1) : "—"}
                 </td>
               )}
-              <td className="px-3 py-3 text-right text-zinc-500 tabular-nums">
+              <td className="py-3 pr-2 pl-1 text-right text-zinc-500 tabular-nums">
                 {m.totalVotes.toLocaleString()}
               </td>
             </tr>
@@ -501,7 +501,7 @@ function Th({
     <th
       onClick={onClick}
       title={title}
-      className={`cursor-pointer select-none px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 ${
+      className={`cursor-pointer select-none py-2 pr-2 pl-1 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 ${
         align === "right" ? "text-right" : "text-left"
       } ${active ? "text-zinc-900 dark:text-zinc-100" : ""}`}
     >
