@@ -118,7 +118,46 @@ export const models = pgTable(
 );
 
 // ============================================================
-// 6. 评分（每用户对每模型每维度一条当前记录）
+// 6. 模型申请工单
+// ============================================================
+export const modelRequestStatusEnum = ["pending", "approved", "rejected"] as const;
+export type ModelRequestStatus = (typeof modelRequestStatusEnum)[number];
+
+export const modelRequests = pgTable(
+  "model_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    vendor: text("vendor"),
+    licenseText: text("license_text"),
+    homepageUrl: text("homepage_url"),
+    releasedAt: date("released_at"),
+    status: text("status", { enum: modelRequestStatusEnum })
+      .notNull()
+      .default("pending"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"),
+    createdModelId: uuid("created_model_id").references(() => models.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("model_requests_status_idx").on(t.status),
+    index("model_requests_requester_idx").on(t.requesterId),
+    index("model_requests_slug_idx").on(t.slug),
+  ],
+);
+
+// ============================================================
+// 7. 评分（每用户对每模型每维度一条当前记录）
 // ============================================================
 export const votes = pgTable(
   "votes",
@@ -324,11 +363,14 @@ export const bannedKeywords = pgTable("banned_keywords", {
 export const usersRelations = relations(users, ({ many }) => ({
   votes: many(votes),
   comments: many(comments),
+  modelRequests: many(modelRequests, { relationName: "requester" }),
+  reviewedModelRequests: many(modelRequests, { relationName: "reviewer" }),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   models: many(models),
   dimensions: many(dimensions),
+  modelRequests: many(modelRequests),
 }));
 
 export const dimensionsRelations = relations(dimensions, ({ one, many }) => ({
@@ -348,6 +390,28 @@ export const modelsRelations = relations(models, ({ one, many }) => ({
   votes: many(votes),
   comments: many(comments),
   stats: many(modelStats),
+  modelRequests: many(modelRequests),
+}));
+
+export const modelRequestsRelations = relations(modelRequests, ({ one }) => ({
+  requester: one(users, {
+    fields: [modelRequests.requesterId],
+    references: [users.id],
+    relationName: "requester",
+  }),
+  category: one(categories, {
+    fields: [modelRequests.categoryId],
+    references: [categories.id],
+  }),
+  reviewer: one(users, {
+    fields: [modelRequests.reviewedBy],
+    references: [users.id],
+    relationName: "reviewer",
+  }),
+  createdModel: one(models, {
+    fields: [modelRequests.createdModelId],
+    references: [models.id],
+  }),
 }));
 
 export const votesRelations = relations(votes, ({ one }) => ({

@@ -11,6 +11,7 @@
  *   4. transition 超过短暂阈值时才显示 loading，避免快速切换闪烁
  */
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export type CategoryTab = { slug: string; name: string };
@@ -68,7 +69,7 @@ export function RankingsShell({
   return (
     <>
       {/* 分类 Tab */}
-      <nav className="mb-8 flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+      <nav className="mb-8 flex items-center gap-4 border-b border-zinc-200 dark:border-zinc-800">
         {categoryTabs.map((tab) => {
           const active = tab.slug === displayCategory;
           return (
@@ -88,6 +89,12 @@ export function RankingsShell({
             </button>
           );
         })}
+        <Link
+          href={`/model-requests/new?category=${encodeURIComponent(displayCategory)}`}
+          className="ml-auto mb-2 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          申请添加新模型
+        </Link>
       </nav>
 
       {/* 引导条 */}
