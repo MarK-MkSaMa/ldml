@@ -19,8 +19,8 @@
  * 一致性问题后续可加 advisory lock / 队列再优化。
  */
 import { db } from "@/db";
-import { votes, voteHistory, modelStats, dimensions, models } from "@/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { votes, voteHistory, modelStats, dimensions, models, users } from "@/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { voteWeight } from "./vote-weight";
 
@@ -266,4 +266,98 @@ export async function getUserVotesForModel(
   const out: Record<number, number> = {};
   for (const r of rows) out[r.dimensionId] = r.score;
   return out;
+}
+
+export type ModelVoteInsights = {
+  totalVotes: number;
+  voterCount: number;
+  distributions: Record<number, Record<number, number>>;
+  recentVotes: {
+    id: string;
+    dimensionId: number;
+    dimensionName: string;
+    score: number;
+    updatedAt: Date;
+    user: {
+      id: string;
+      username: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+    };
+  }[];
+};
+
+/**
+ * 查询某模型的社区评分洞察
+ *
+ * 只返回当前有效评分：
+ * - 每个维度的 1-10 分布
+ * - 最近评分列表
+ * - 总评分条数 / 评分用户数
+ */
+export async function getModelVoteInsights(
+  modelId: string,
+  recentLimit = 30,
+): Promise<ModelVoteInsights> {
+  const [summaryRow, distributionRows, recentRows] = await Promise.all([
+    db
+      .select({
+        totalVotes: sql<number>`count(*)::int`,
+        voterCount: sql<number>`count(distinct ${votes.userId})::int`,
+      })
+      .from(votes)
+      .where(eq(votes.modelId, modelId)),
+    db
+      .select({
+        dimensionId: votes.dimensionId,
+        score: votes.score,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(votes)
+      .where(eq(votes.modelId, modelId))
+      .groupBy(votes.dimensionId, votes.score),
+    db
+      .select({
+        id: votes.id,
+        dimensionId: votes.dimensionId,
+        dimensionName: dimensions.name,
+        score: votes.score,
+        updatedAt: votes.updatedAt,
+        userId: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(votes)
+      .innerJoin(users, eq(users.id, votes.userId))
+      .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+      .where(eq(votes.modelId, modelId))
+      .orderBy(desc(votes.updatedAt))
+      .limit(recentLimit),
+  ]);
+
+  const distributions: ModelVoteInsights["distributions"] = {};
+  for (const row of distributionRows) {
+    distributions[row.dimensionId] ??= {};
+    distributions[row.dimensionId][row.score] = Number(row.count);
+  }
+
+  return {
+    totalVotes: Number(summaryRow[0]?.totalVotes ?? 0),
+    voterCount: Number(summaryRow[0]?.voterCount ?? 0),
+    distributions,
+    recentVotes: recentRows.map((row) => ({
+      id: row.id,
+      dimensionId: row.dimensionId,
+      dimensionName: row.dimensionName,
+      score: row.score,
+      updatedAt: row.updatedAt,
+      user: {
+        id: row.userId,
+        username: row.username,
+        displayName: row.displayName,
+        avatarUrl: row.avatarUrl,
+      },
+    })),
+  };
 }

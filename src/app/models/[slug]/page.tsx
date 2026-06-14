@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUserFresh } from "@/lib/current-user";
 import { getModelBySlug } from "@/lib/models";
-import { getUserVotesForModel } from "@/lib/votes";
+import { getModelVoteInsights, getUserVotesForModel } from "@/lib/votes";
 import { listCommentsForModel, type CommentSort } from "@/lib/comments";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -28,7 +28,10 @@ export default async function ModelDetailPage({
   if (!model) notFound();
 
   const user = await getCurrentUserFresh();
-  const myVotes = user ? await getUserVotesForModel(user.id, model.id) : {};
+  const [myVotes, voteInsights] = await Promise.all([
+    user ? getUserVotesForModel(user.id, model.id) : Promise.resolve({}),
+    getModelVoteInsights(model.id),
+  ]);
 
   const canVote = !!user && user.trustLevel >= 1;
   let notVotableReason: string | undefined;
@@ -161,8 +164,11 @@ export default async function ModelDetailPage({
               slug: d.slug,
               name: d.name,
               description: d.description,
+              avg: d.avg,
+              voteCount: d.voteCount,
             }))}
             initialMyVotes={myVotes}
+            voteInsights={voteInsights}
             canVote={canVote}
             notVotableReason={notVotableReason}
           />

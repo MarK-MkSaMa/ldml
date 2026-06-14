@@ -1,19 +1,22 @@
 "use client";
 
 /**
- * 评分面板（客户端组件）
+ * 评分入口（客户端组件）
  *
- * 每个维度一行：维度名 + 1-10 按钮组 + 撤回按钮
- * 点击按钮立即 POST，乐观更新本地状态。
+ * 页面默认只展示紧凑概览；用户点击后再打开弹窗进行评分，
+ * 也可以查看社区评分分布和最近评分列表。
  */
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { ModelVoteInsights } from "@/lib/votes";
 
 export type RatingDimension = {
   id: number;
   slug: string;
   name: string;
   description: string | null;
+  avg: number | null;
+  voteCount: number;
 };
 
 /**
@@ -41,12 +44,14 @@ export function RatingPanel({
   modelId,
   dimensions,
   initialMyVotes,
+  voteInsights,
   canVote,
   notVotableReason,
 }: {
   modelId: string;
   dimensions: RatingDimension[];
   initialMyVotes: Record<number, number>;
+  voteInsights: ModelVoteInsights;
   canVote: boolean;
   notVotableReason?: string;
 }) {
@@ -54,7 +59,12 @@ export function RatingPanel({
   const [myVotes, setMyVotes] = useState<Record<number, number>>(initialMyVotes);
   const [pendingDim, setPendingDim] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const [, startTransition] = useTransition();
+
+  const votedCount = dimensions.filter((d) => myVotes[d.id] !== undefined).length;
+  const hasVotes = votedCount > 0;
 
   async function submit(dimensionId: number, score: number) {
     if (!canVote) return;
@@ -118,6 +128,95 @@ export function RatingPanel({
   }
 
   return (
+    <>
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                你的评分
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                {hasVotes ? `已评分 ${votedCount} / ${dimensions.length} 项` : "尚未评分"}
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                社区 {voteInsights.voterCount.toLocaleString()} 人 / {voteInsights.totalVotes.toLocaleString()} 票
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-zinc-500">
+              页面默认收起打分按钮，点击后在弹窗中为熟悉的维度评分，也可以查看大家怎么打分。
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setRatingOpen(true)}
+              className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            >
+              {hasVotes ? "修改我的评分" : "我要评分"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setInsightsOpen(true)}
+              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
+            >
+              查看大家的评分
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Dialog
+        title="我的评分"
+        description="对你熟悉的维度评 1-10 分；不熟的维度可以跳过。"
+        open={ratingOpen}
+        onClose={() => setRatingOpen(false)}
+      >
+        <RatingForm
+          dimensions={dimensions}
+          myVotes={myVotes}
+          pendingDim={pendingDim}
+          error={error}
+          canVote={canVote}
+          notVotableReason={notVotableReason}
+          onSubmit={submit}
+          onWithdraw={withdraw}
+        />
+      </Dialog>
+
+      <Dialog
+        title="大家的评分"
+        description="展示当前有效评分的分数分布和最近评分，不包含撤回记录。"
+        open={insightsOpen}
+        onClose={() => setInsightsOpen(false)}
+      >
+        <VoteInsights dimensions={dimensions} insights={voteInsights} />
+      </Dialog>
+    </>
+  );
+}
+
+function RatingForm({
+  dimensions,
+  myVotes,
+  pendingDim,
+  error,
+  canVote,
+  notVotableReason,
+  onSubmit,
+  onWithdraw,
+}: {
+  dimensions: RatingDimension[];
+  myVotes: Record<number, number>;
+  pendingDim: number | null;
+  error: string | null;
+  canVote: boolean;
+  notVotableReason?: string;
+  onSubmit: (dimensionId: number, score: number) => void;
+  onWithdraw: (dimensionId: number) => void;
+}) {
+  return (
     <div className="space-y-4">
       {!canVote && notVotableReason && (
         <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
@@ -140,15 +239,20 @@ export function RatingPanel({
         return (
           <div
             key={d.id}
-            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
           >
-            <div className="min-w-32">
-              <div className="text-sm font-medium" title={d.description ?? undefined}>
-                {d.name}
+            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="text-sm font-medium" title={d.description ?? undefined}>
+                  {d.name}
+                </div>
+                {d.description && (
+                  <div className="text-xs text-zinc-500">{d.description}</div>
+                )}
               </div>
-              {d.description && (
-                <div className="text-xs text-zinc-500">{d.description}</div>
-              )}
+              <div className="text-xs text-zinc-500">
+                社区均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {d.voteCount.toLocaleString()} 票
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-1">
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
@@ -158,7 +262,7 @@ export function RatingPanel({
                     key={n}
                     type="button"
                     disabled={!canVote || pending}
-                    onClick={() => submit(d.id, n)}
+                    onClick={() => onSubmit(d.id, n)}
                     title={`${n} 分 · ${SCORE_HINTS[n]}`}
                     className={`h-8 w-8 rounded-md border text-sm tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
@@ -173,7 +277,7 @@ export function RatingPanel({
               <button
                 type="button"
                 disabled={!canVote || pending || my === undefined}
-                onClick={() => withdraw(d.id)}
+                onClick={() => onWithdraw(d.id)}
                 className="ml-2 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:text-red-400"
               >
                 撤回
@@ -182,6 +286,179 @@ export function RatingPanel({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function VoteInsights({
+  dimensions,
+  insights,
+}: {
+  dimensions: RatingDimension[];
+  insights: ModelVoteInsights;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+          <div className="text-xs text-zinc-500">评分用户</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums">
+            {insights.voterCount.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+          <div className="text-xs text-zinc-500">有效评分</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums">
+            {insights.totalVotes.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      <section>
+        <h3 className="mb-3 text-sm font-semibold">分数分布</h3>
+        <div className="space-y-4">
+          {dimensions.map((d) => {
+            const distribution = insights.distributions[d.id] ?? {};
+            const maxCount = Math.max(1, ...Object.values(distribution));
+            return (
+              <div key={d.id} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">{d.name}</div>
+                    <div className="text-xs text-zinc-500">
+                      均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {d.voteCount.toLocaleString()} 票
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-10 gap-1.5">
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((score) => {
+                    const count = distribution[score] ?? 0;
+                    const height = count === 0 ? 8 : Math.max(12, (count / maxCount) * 56);
+                    return (
+                      <div key={score} className="flex flex-col items-center gap-1">
+                        <div className="flex h-14 w-full items-end justify-center rounded bg-zinc-50 px-1 dark:bg-zinc-900">
+                          <div
+                            className="w-full rounded-t bg-zinc-900 dark:bg-zinc-100"
+                            style={{ height }}
+                            title={`${score} 分：${count} 票`}
+                          />
+                        </div>
+                        <div className="text-[10px] text-zinc-500 tabular-nums">{score}</div>
+                        <div className="text-[10px] text-zinc-400 tabular-nums">{count}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-3 text-sm font-semibold">最近评分</h3>
+        {insights.recentVotes.length > 0 ? (
+          <div className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {insights.recentVotes.map((vote) => (
+              <div key={vote.id} className="flex items-center gap-3 px-3 py-2">
+                <UserAvatar
+                  avatarUrl={vote.user.avatarUrl}
+                  name={vote.user.displayName ?? vote.user.username}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">
+                    {vote.user.displayName ?? vote.user.username}
+                  </div>
+                  <div className="truncate text-xs text-zinc-500">
+                    {vote.dimensionName} · {formatDateTime(vote.updatedAt)}
+                  </div>
+                </div>
+                <div className="rounded-md bg-zinc-100 px-2 py-1 text-sm font-semibold tabular-nums dark:bg-zinc-900">
+                  {vote.score} 分
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+            暂时还没有评分
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function UserAvatar({ avatarUrl, name }: { avatarUrl: string | null; name: string }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={name}
+        className="h-9 w-9 rounded-full bg-zinc-100 object-cover dark:bg-zinc-900"
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-sm font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+      {name.slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+function Dialog({
+  title,
+  description,
+  open,
+  onClose,
+  children,
+}: {
+  title: string;
+  description: string;
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="关闭弹窗"
+        className="absolute inset-0 bg-black/45"
+        onClick={onClose}
+      />
+      <div className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+          <div>
+            <h2 className="text-lg font-semibold">{title}</h2>
+            <p className="mt-1 text-sm text-zinc-500">{description}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </div>
+        <div className="overflow-y-auto px-5 py-4">{children}</div>
+      </div>
     </div>
   );
 }
@@ -195,13 +472,7 @@ export function RatingPanel({
 const SCORE_GUIDE_KEY = "score_guide_open";
 
 function ScoreGuide() {
-  // 服务端渲染时统一为 true（默认展开），客户端 mount 后再读 localStorage
   const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    const v = localStorage.getItem(SCORE_GUIDE_KEY);
-    if (v === "0") setOpen(false);
-  }, []);
 
   function toggle() {
     setOpen((prev) => {
@@ -216,13 +487,13 @@ function ScoreGuide() {
       <button
         type="button"
         onClick={toggle}
-        className="flex w-full items-center justify-between px-4 py-2 text-left text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+        className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
       >
         <span>
           💡 评分参考：
           <span className="text-zinc-500">每个分数都有含义，鼠标悬停按钮可看说明</span>
         </span>
-        <span className="text-xs text-zinc-500">
+        <span className="shrink-0 text-xs text-zinc-500">
           {open ? "收起 ▲" : "展开 ▼"}
         </span>
       </button>
@@ -243,4 +514,17 @@ function ScoreGuide() {
       )}
     </div>
   );
+}
+
+function formatDateTime(value: Date | string) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return "时间未知";
+
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
