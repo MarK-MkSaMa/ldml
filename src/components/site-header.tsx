@@ -5,8 +5,14 @@
  * 包含：站名 + 公告入口 + SessionMenu
  */
 import Link from "next/link";
-import { Megaphone } from "lucide-react";
+import { MessageSquare, Megaphone, Trophy } from "lucide-react";
 import { SessionMenu } from "./session-menu";
+
+const NAV_ITEMS = [
+  { href: "/", label: "排行榜", icon: Trophy },
+  { href: "/comments", label: "全站评论", icon: MessageSquare },
+  { href: "/announcements", label: "公告", icon: Megaphone },
+];
 
 export function SiteHeader({
   maxWidth = "max-w-6xl",
@@ -18,18 +24,25 @@ export function SiteHeader({
       <div
         className={`mx-auto flex items-center justify-between px-6 py-4 ${maxWidth}`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Link href="/" className="text-lg font-semibold">
             LDML 大模型排行榜
           </Link>
-          <Link
-            href="/announcements"
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-            title="查看全部公告"
-          >
-            <Megaphone className="h-4 w-4" aria-hidden />
-            <span>公告</span>
-          </Link>
+          <nav className="flex items-center gap-1" aria-label="主导航">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
         <SessionMenu />
       </div>

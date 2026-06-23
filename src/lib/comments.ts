@@ -15,6 +15,8 @@ import {
   commentReactions,
   commentReports,
   bannedKeywords,
+  categories,
+  models,
   users,
 } from "@/db/schema";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
@@ -484,6 +486,97 @@ function hotScore(c: CommentNode): number {
   const net = c.likeCount - c.dislikeCount;
   const hours = (Date.now() - c.createdAt.getTime()) / (1000 * 60 * 60);
   return net - hours / 4;
+}
+
+export type CommentFeedItem = {
+  id: string;
+  parentId: string | null;
+  content: string;
+  contentHtml: string;
+  likeCount: number;
+  dislikeCount: number;
+  isHidden: boolean;
+  editedAt: Date | null;
+  createdAt: Date;
+  author: {
+    id: string;
+    username: string;
+    avatarUrl: string | null;
+    isAdmin: boolean;
+  };
+  model: {
+    id: string;
+    name: string;
+    slug: string;
+    category: {
+      name: string;
+      slug: string;
+    };
+  };
+};
+
+/**
+ * 查询全站评论流
+ *
+ * 用于 /comments 页面，展示评论内容以及它来自哪个模型。
+ */
+export async function listCommentFeed({
+  sort = "latest",
+  limit = 50,
+}: {
+  sort?: CommentSort;
+  limit?: number;
+} = {}): Promise<CommentFeedItem[]> {
+  const hotExpr = sql<number>`(${comments.likeCount} - ${comments.dislikeCount}) - extract(epoch from (now() - ${comments.createdAt})) / 3600 / 4`;
+
+  const rows = await db
+    .select({
+      comment: comments,
+      author: {
+        id: users.id,
+        username: users.username,
+        avatarUrl: users.avatarUrl,
+        isAdmin: users.isAdmin,
+      },
+      model: {
+        id: models.id,
+        name: models.name,
+        slug: models.slug,
+      },
+      category: {
+        name: categories.name,
+        slug: categories.slug,
+      },
+    })
+    .from(comments)
+    .innerJoin(users, eq(users.id, comments.userId))
+    .innerJoin(models, eq(models.id, comments.modelId))
+    .innerJoin(categories, eq(categories.id, models.categoryId))
+    .where(eq(comments.isDeleted, false))
+    .orderBy(sort === "hot" ? desc(hotExpr) : desc(comments.createdAt))
+    .limit(Math.max(1, Math.min(limit, 100)));
+
+  return rows.map((row) => {
+    const hidden = row.comment.isHidden;
+    return {
+      id: row.comment.id,
+      parentId: row.comment.parentId,
+      content: hidden ? "" : row.comment.content,
+      contentHtml: hidden ? "" : row.comment.contentHtml,
+      likeCount: row.comment.likeCount,
+      dislikeCount: row.comment.dislikeCount,
+      isHidden: row.comment.isHidden,
+      editedAt: row.comment.editedAt,
+      createdAt: row.comment.createdAt,
+      author: row.author,
+      model: {
+        id: row.model.id,
+        name: row.model.name,
+        slug: row.model.slug,
+        category: row.category,
+      },
+    };
+  });
 }
 
 // ============================================================

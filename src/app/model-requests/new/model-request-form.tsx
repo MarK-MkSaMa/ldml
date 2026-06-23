@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { suggestSlug } from "@/lib/slug";
 import { submitModelRequestAction, type ModelRequestFormState } from "./actions";
 
@@ -122,12 +121,6 @@ export function ModelRequestForm({
         >
           {pending ? "提交中…" : "提交申请"}
         </button>
-        <Link
-          href="/"
-          className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-        >
-          返回排行榜
-        </Link>
       </div>
     </form>
   );
