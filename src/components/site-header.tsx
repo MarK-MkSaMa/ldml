@@ -9,7 +9,7 @@ import { FlaskConical, ListChecks, MessageSquare, Megaphone, Trophy } from "luci
 import { SessionMenu } from "./session-menu";
 
 const NAV_ITEMS = [
-  { href: "/", label: "评分排行榜", icon: Trophy },
+  { href: "/rankings/text", label: "评分排行榜", icon: Trophy },
   { href: "/benchmarks", label: "基准测试", icon: FlaskConical },
   { href: "/subjective-tests", label: "主观测试", icon: ListChecks },
   { href: "/comments", label: "全站评论", icon: MessageSquare },

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ListChecks } from "lucide-react";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -31,16 +30,6 @@ export default async function SubjectiveTestsPage({
       <SiteHeader maxWidth="max-w-[96rem]" />
       <AnnouncementBanner />
       <div className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="rounded-xl bg-zinc-900 p-3 text-white dark:bg-zinc-100 dark:text-zinc-900">
-            <ListChecks className="h-6 w-6" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">主观测试</h1>
-            <p className="mt-2 text-sm text-zinc-500">按文字、生图、生视频模型分类的开放排序投票，Elo 实时基于当前有效排序重算。</p>
-          </div>
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
           <section className="space-y-4">
             <h2 className="text-lg font-semibold">投票活动</h2>

@@ -13,8 +13,8 @@ export function SiteFooter() {
           LDML · Linux DO 大模型排行榜 · 由社区用户投票产生
         </div>
         <nav className="flex gap-4">
-          <Link href="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100">
-            关于
+          <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100">
+            首页
           </Link>
           <Link
             href="/announcements"
