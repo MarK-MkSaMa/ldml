@@ -4,6 +4,7 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getCurrentUserFresh } from "@/lib/current-user";
+import { isSafeExternalUrl } from "@/lib/safe-url";
 import { getPublicSubjectiveTestActivityDetail } from "@/lib/subjective-tests";
 import { SubjectiveVoteForm } from "../vote-form";
 
@@ -15,6 +16,9 @@ export default async function SubjectiveTestDetailPage({ params }: { params: Pro
   const activity = await getPublicSubjectiveTestActivityDetail(id, user?.id);
   if (!activity) notFound();
   const canVote = Boolean(user && user.trustLevel >= 1);
+  const linuxdoUrl = isSafeExternalUrl(activity.linuxdoUrl, { allowedProtocols: ["https:"], allowedHosts: ["linux.do"] })
+    ? activity.linuxdoUrl
+    : null;
   const userRanks = Object.fromEntries(activity.userRanks.entries());
 
   return (
@@ -30,8 +34,8 @@ export default async function SubjectiveTestDetailPage({ params }: { params: Pro
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{activity.categoryName}</span>
             <span>{activity.voteCount} 人投票</span>
-            {activity.linuxdoUrl && (
-              <a href={activity.linuxdoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">Linux DO 活动帖</a>
+            {linuxdoUrl && (
+              <a href={linuxdoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">Linux DO 活动帖</a>
             )}
           </div>
           <h1 className="text-3xl font-bold tracking-tight">{activity.title}</h1>

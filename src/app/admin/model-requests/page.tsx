@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listModelRequestsForAdmin } from "@/lib/model-requests";
+import { isSafeExternalUrl } from "@/lib/safe-url";
 import { modelRequestStatusEnum, type ModelRequestStatus } from "@/db/schema";
 import { ModelRequestRowActions } from "./row-actions";
 
@@ -77,7 +78,7 @@ export default async function AdminModelRequestsPage({
                       </div>
                       <div className="mt-1 text-xs text-zinc-500">
                         协议：{r.licenseText || "—"}
-                        {r.homepageUrl && (
+                        {isSafeExternalUrl(r.homepageUrl) && (
                           <>
                             {" · "}
                             <a

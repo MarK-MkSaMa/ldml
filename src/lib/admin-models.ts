@@ -8,6 +8,7 @@
 import { db } from "@/db";
 import { models, modelStatusEnum, type ModelStatus } from "@/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { normalizeSafeExternalUrl } from "./safe-url";
 
 export type AdminModelRow = typeof models.$inferSelect;
 
@@ -33,19 +34,34 @@ const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 const SLUG_MAX = 80;
 const VENDOR_MAX = 60;
 
-function validate(input: ModelInput): void {
-  if (!input.name?.trim()) throw new Error("名称不能为空");
-  if (input.name.length > NAME_MAX)
+function clean(input: ModelInput) {
+  return {
+    ...input,
+    name: input.name.trim(),
+    slug: input.slug.trim(),
+    vendor: input.vendor?.trim() || null,
+    licenseText: input.licenseText?.trim() || null,
+    homepageUrl: normalizeSafeExternalUrl(input.homepageUrl, { fieldName: "官网地址" }),
+    releasedAt: input.releasedAt || null,
+    pinned: input.pinned ?? false,
+  };
+}
+
+function validate(input: ModelInput): ReturnType<typeof clean> {
+  const data = clean(input);
+  if (!data.name) throw new Error("名称不能为空");
+  if (data.name.length > NAME_MAX)
     throw new Error(`名称超过 ${NAME_MAX} 字符`);
-  if (!input.slug?.trim()) throw new Error("slug 不能为空");
-  if (input.slug.length > SLUG_MAX)
+  if (!data.slug) throw new Error("slug 不能为空");
+  if (data.slug.length > SLUG_MAX)
     throw new Error(`slug 超过 ${SLUG_MAX} 字符`);
-  if (!SLUG_RE.test(input.slug))
+  if (!SLUG_RE.test(data.slug))
     throw new Error("slug 只能包含小写字母、数字和连字符，且以字母或数字开头");
-  if (input.vendor && input.vendor.length > VENDOR_MAX)
+  if (data.vendor && data.vendor.length > VENDOR_MAX)
     throw new Error(`厂商超过 ${VENDOR_MAX} 字符`);
-  if (!modelStatusEnum.includes(input.status))
+  if (!modelStatusEnum.includes(data.status))
     throw new Error("非法的状态值");
+  return data;
 }
 
 export async function listModelsForAdmin(filter: ModelFilter = {}): Promise<AdminModelRow[]> {
@@ -66,22 +82,22 @@ export async function getModelByIdForAdmin(id: string): Promise<AdminModelRow | 
 }
 
 export async function createModelAdmin(input: ModelInput): Promise<AdminModelRow> {
-  validate(input);
+  const data = validate(input);
   const [row] = await db
     .insert(models)
     .values({
-      name: input.name.trim(),
-      slug: input.slug.trim(),
-      categoryId: input.categoryId,
-      vendor: input.vendor?.trim() || null,
-      licenseText: input.licenseText?.trim() || null,
-      homepageUrl: input.homepageUrl?.trim() || null,
-      releasedAt: input.releasedAt || null,
-      status: input.status,
-      pinned: input.pinned ?? false,
+      name: data.name,
+      slug: data.slug,
+      categoryId: data.categoryId,
+      vendor: data.vendor,
+      licenseText: data.licenseText,
+      homepageUrl: data.homepageUrl,
+      releasedAt: data.releasedAt,
+      status: data.status,
+      pinned: data.pinned,
       // 进入 observing/listed 时记录发布时间
       publishedAt:
-        input.status === "observing" || input.status === "listed" ? new Date() : null,
+        data.status === "observing" || data.status === "listed" ? new Date() : null,
     })
     .returning();
   return row;
@@ -91,7 +107,7 @@ export async function updateModelAdmin(
   id: string,
   input: ModelInput,
 ): Promise<AdminModelRow | null> {
-  validate(input);
+  const data = validate(input);
 
   const [existing] = await db
     .select({ status: models.status, publishedAt: models.publishedAt })
@@ -102,20 +118,20 @@ export async function updateModelAdmin(
   // 草稿 → observing/listed 时填充 publishedAt（如果没有）
   const promoting =
     (existing.status === "draft" || existing.status === "archived") &&
-    (input.status === "observing" || input.status === "listed");
+    (data.status === "observing" || data.status === "listed");
 
   const [row] = await db
     .update(models)
     .set({
-      name: input.name.trim(),
-      slug: input.slug.trim(),
-      categoryId: input.categoryId,
-      vendor: input.vendor?.trim() || null,
-      licenseText: input.licenseText?.trim() || null,
-      homepageUrl: input.homepageUrl?.trim() || null,
-      releasedAt: input.releasedAt || null,
-      status: input.status,
-      pinned: input.pinned ?? false,
+      name: data.name,
+      slug: data.slug,
+      categoryId: data.categoryId,
+      vendor: data.vendor,
+      licenseText: data.licenseText,
+      homepageUrl: data.homepageUrl,
+      releasedAt: data.releasedAt,
+      status: data.status,
+      pinned: data.pinned,
       ...(promoting && existing.publishedAt === null
         ? { publishedAt: new Date() }
         : {}),

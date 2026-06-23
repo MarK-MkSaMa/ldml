@@ -10,6 +10,7 @@ import {
   type ModelRequestStatus,
 } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
+import { normalizeSafeExternalUrl } from "./safe-url";
 
 export type ModelRequestInput = {
   requesterId: string;
@@ -61,13 +62,7 @@ function validate(input: ModelRequestInput): ReturnType<typeof clean> {
   if (data.licenseText && data.licenseText.length > LICENSE_MAX) {
     throw new Error(`开源协议超过 ${LICENSE_MAX} 字符`);
   }
-  if (data.homepageUrl) {
-    try {
-      new URL(data.homepageUrl);
-    } catch {
-      throw new Error("官网地址格式不正确");
-    }
-  }
+  data.homepageUrl = normalizeSafeExternalUrl(data.homepageUrl, { fieldName: "官网地址" });
   if (data.releasedAt && !/^\d{4}-\d{2}-\d{2}$/.test(data.releasedAt)) {
     throw new Error("发布日期格式不正确");
   }

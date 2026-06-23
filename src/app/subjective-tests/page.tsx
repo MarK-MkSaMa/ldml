@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { isSafeExternalUrl } from "@/lib/safe-url";
 import {
   getSubjectiveTestEloLeaderboard,
   listPublicSubjectiveTestActivities,
@@ -51,7 +52,7 @@ export default async function SubjectiveTestsPage({
                     <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-400">{activity.requirement}</p>
                     <div className="mt-4 flex flex-wrap gap-3 text-sm">
                       <Link href={`/subjective-tests/${activity.id}`} className="font-medium text-blue-600 hover:underline dark:text-blue-400">查看详情并投票</Link>
-                      {activity.linuxdoUrl && (
+                      {isSafeExternalUrl(activity.linuxdoUrl, { allowedProtocols: ["https:"], allowedHosts: ["linux.do"] }) && (
                         <a href={activity.linuxdoUrl} target="_blank" rel="noreferrer" className="text-zinc-500 hover:underline">Linux DO 活动帖</a>
                       )}
                     </div>

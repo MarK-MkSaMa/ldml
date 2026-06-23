@@ -9,6 +9,7 @@ import {
   type SubjectiveTestStatus,
 } from "@/db/schema";
 import { and, asc, countDistinct, desc, eq, inArray } from "drizzle-orm";
+import { normalizeLinuxDoUrl } from "./safe-url";
 
 export type SubjectiveTestActivityInput = {
   title: string;
@@ -67,6 +68,7 @@ function validateActivityInput(input: SubjectiveTestActivityInput) {
   if (data.requirement.length > REQUIREMENT_MAX) throw new Error(`测试需求超过 ${REQUIREMENT_MAX} 字符`);
   if (data.resultNote && data.resultNote.length > RESULT_NOTE_MAX) throw new Error(`结果说明超过 ${RESULT_NOTE_MAX} 字符`);
   if (data.linuxdoUrl && data.linuxdoUrl.length > URL_MAX) throw new Error(`活动帖链接超过 ${URL_MAX} 字符`);
+  data.linuxdoUrl = normalizeLinuxDoUrl(data.linuxdoUrl);
   return data;
 }
 

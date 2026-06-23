@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import { z } from "zod";
 
 /**
@@ -6,8 +7,6 @@ import { z } from "zod";
  * 因此在所有场景下都安全。
  */
 if (typeof window === "undefined" && !process.env.__ENV_LOADED__) {
-  // 动态 require 避免在浏览器侧打包 dotenv
-  const dotenv = require("dotenv") as typeof import("dotenv");
   dotenv.config({ path: ".env.local" });
   dotenv.config({ path: ".env" });
   process.env.__ENV_LOADED__ = "1";

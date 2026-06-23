@@ -8,6 +8,7 @@ import { getCurrentUserFresh } from "@/lib/current-user";
 import { getModelBySlug } from "@/lib/models";
 import { getModelVoteInsights, getUserVotesForModel } from "@/lib/votes";
 import { listCommentsForModel, type CommentSort } from "@/lib/comments";
+import { isSafeExternalUrl } from "@/lib/safe-url";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { RatingPanel } from "./rating-panel";
@@ -27,6 +28,7 @@ export default async function ModelDetailPage({
   const model = await getModelBySlug(slug);
   if (!model) notFound();
 
+  const homepageUrl = isSafeExternalUrl(model.homepageUrl) ? model.homepageUrl : null;
   const user = await getCurrentUserFresh();
   const [myVotes, voteInsights] = await Promise.all([
     user ? getUserVotesForModel(user.id, model.id) : Promise.resolve({}),
@@ -101,9 +103,9 @@ export default async function ModelDetailPage({
             )}
           </div>
 
-          {model.homepageUrl && (
+          {homepageUrl && (
             <a
-              href={model.homepageUrl}
+              href={homepageUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"

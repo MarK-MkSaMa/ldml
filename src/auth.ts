@@ -18,7 +18,7 @@ import { ProxyAgent, setGlobalDispatcher } from "undici";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { env } from "@/env";
+import { env, requireEnv } from "@/env";
 
 // ============================================================
 // Node 全局 fetch 走代理
@@ -53,14 +53,16 @@ const linuxdoProvider = {
   id: "linuxdo",
   name: "Linux DO",
   type: "oauth" as const,
+  issuer: "https://connect.linux.do",
+  checks: ["state"] as const,
   authorization: {
     url: "https://connect.linux.do/oauth2/authorize",
     params: { scope: "" },
   },
   token: "https://connect.linux.do/oauth2/token",
   userinfo: "https://connect.linux.do/api/user",
-  clientId: env.LINUXDO_CLIENT_ID,
-  clientSecret: env.LINUXDO_CLIENT_SECRET,
+  clientId: requireEnv("LINUXDO_CLIENT_ID"),
+  clientSecret: requireEnv("LINUXDO_CLIENT_SECRET"),
   // 把 OAuth profile 标准化为 Auth.js 的 User 形状
   profile(profile: LinuxDoProfile) {
     return {
@@ -78,7 +80,7 @@ const linuxdoProvider = {
 const config: NextAuthConfig = {
   // session 通过 JWT 维护（不需要在数据库中存 sessions 表）
   session: { strategy: "jwt" },
-  secret: env.AUTH_SECRET,
+  secret: requireEnv("AUTH_SECRET"),
   trustHost: true,
   providers: [linuxdoProvider],
   pages: {
