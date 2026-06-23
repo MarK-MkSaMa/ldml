@@ -123,6 +123,14 @@ export const models = pgTable(
 export const modelRequestStatusEnum = ["pending", "approved", "rejected"] as const;
 export type ModelRequestStatus = (typeof modelRequestStatusEnum)[number];
 
+export const benchmarkQuestionStatusEnum = [
+  "pending",
+  "approved",
+  "rejected",
+  "archived",
+] as const;
+export type BenchmarkQuestionStatus = (typeof benchmarkQuestionStatusEnum)[number];
+
 export const modelRequests = pgTable(
   "model_requests",
   {
@@ -157,7 +165,58 @@ export const modelRequests = pgTable(
 );
 
 // ============================================================
-// 7. 评分（每用户对每模型每维度一条当前记录）
+// 7. 基准测试题库与结果
+// ============================================================
+export const benchmarkQuestions = pgTable(
+  "benchmark_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    uploaderId: uuid("uploader_id")
+      .notNull()
+      .references(() => users.id),
+    question: text("question").notNull(),
+    referenceAnswer: text("reference_answer").notNull(),
+    judgeNote: text("judge_note"),
+    status: text("status", { enum: benchmarkQuestionStatusEnum })
+      .notNull()
+      .default("pending"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("benchmark_questions_status_idx").on(t.status),
+    index("benchmark_questions_uploader_idx").on(t.uploaderId),
+  ],
+);
+
+export const benchmarkResults = pgTable(
+  "benchmark_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questionId: uuid("question_id")
+      .notNull()
+      .references(() => benchmarkQuestions.id, { onDelete: "cascade" }),
+    modelName: text("model_name").notNull(),
+    isCorrect: boolean("is_correct").notNull(),
+    modelAnswer: text("model_answer"),
+    note: text("note"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("benchmark_results_question_model_idx").on(t.questionId, t.modelName),
+    index("benchmark_results_model_idx").on(t.modelName),
+  ],
+);
+
+// ============================================================
+// 8. 评分（每用户对每模型每维度一条当前记录）
 // ============================================================
 export const votes = pgTable(
   "votes",
@@ -365,6 +424,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   modelRequests: many(modelRequests, { relationName: "requester" }),
   reviewedModelRequests: many(modelRequests, { relationName: "reviewer" }),
+  benchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkUploader" }),
+  reviewedBenchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkReviewer" }),
+  benchmarkResults: many(benchmarkResults),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -414,7 +476,32 @@ export const modelRequestsRelations = relations(modelRequests, ({ one }) => ({
   }),
 }));
 
-export const votesRelations = relations(votes, ({ one }) => ({
+export const benchmarkQuestionsRelations = relations(benchmarkQuestions, ({ one, many }) => ({
+  uploader: one(users, {
+    fields: [benchmarkQuestions.uploaderId],
+    references: [users.id],
+    relationName: "benchmarkUploader",
+  }),
+  reviewer: one(users, {
+    fields: [benchmarkQuestions.reviewedBy],
+    references: [users.id],
+    relationName: "benchmarkReviewer",
+  }),
+  results: many(benchmarkResults),
+}));
+
+export const benchmarkResultsRelations = relations(benchmarkResults, ({ one }) => ({
+  question: one(benchmarkQuestions, {
+    fields: [benchmarkResults.questionId],
+    references: [benchmarkQuestions.id],
+  }),
+  creator: one(users, {
+    fields: [benchmarkResults.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const votesRelations = relations(votes, ({ one }) => ({ 
   user: one(users, { fields: [votes.userId], references: [users.id] }),
   model: one(models, { fields: [votes.modelId], references: [models.id] }),
   dimension: one(dimensions, {

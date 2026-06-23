@@ -5,11 +5,12 @@
  * 包含：站名 + 公告入口 + SessionMenu
  */
 import Link from "next/link";
-import { MessageSquare, Megaphone, Trophy } from "lucide-react";
+import { FlaskConical, MessageSquare, Megaphone, Trophy } from "lucide-react";
 import { SessionMenu } from "./session-menu";
 
 const NAV_ITEMS = [
-  { href: "/", label: "排行榜", icon: Trophy },
+  { href: "/", label: "评分排行榜", icon: Trophy },
+  { href: "/benchmarks", label: "基准测试", icon: FlaskConical },
   { href: "/comments", label: "全站评论", icon: MessageSquare },
   { href: "/announcements", label: "公告", icon: Megaphone },
 ];
