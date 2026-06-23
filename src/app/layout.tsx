@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,7 +28,15 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Script
+          defer
+          src="https://umami.zhouyihub.com/script.js"
+          data-website-id="dcf38d5b-4356-4b8e-9f57-f68a9b2989bf"
+          strategy="afterInteractive"
+        />
+      </body>
     </html>
   );
 }

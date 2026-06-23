@@ -131,6 +131,9 @@ export const benchmarkQuestionStatusEnum = [
 ] as const;
 export type BenchmarkQuestionStatus = (typeof benchmarkQuestionStatusEnum)[number];
 
+export const subjectiveTestStatusEnum = ["draft", "published", "archived"] as const;
+export type SubjectiveTestStatus = (typeof subjectiveTestStatusEnum)[number];
+
 export const modelRequests = pgTable(
   "model_requests",
   {
@@ -212,6 +215,90 @@ export const benchmarkResults = pgTable(
   (t) => [
     uniqueIndex("benchmark_results_question_model_idx").on(t.questionId, t.modelName),
     index("benchmark_results_model_idx").on(t.modelName),
+  ],
+);
+
+// ============================================================
+// 8. 主观测试活动 / 输出 / 排序投票
+// ============================================================
+export const subjectiveTestActivities = pgTable(
+  "subjective_test_activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id),
+    title: text("title").notNull(),
+    requirement: text("requirement").notNull(),
+    resultNote: text("result_note"),
+    linuxdoUrl: text("linuxdo_url"),
+    status: text("status", { enum: subjectiveTestStatusEnum })
+      .notNull()
+      .default("draft"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("subjective_test_activities_category_idx").on(t.categoryId),
+    index("subjective_test_activities_status_idx").on(t.status),
+  ],
+);
+
+export const subjectiveTestEntries = pgTable(
+  "subjective_test_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => subjectiveTestActivities.id, { onDelete: "cascade" }),
+    modelName: text("model_name").notNull(),
+    output: text("output").notNull(),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("subjective_test_entries_activity_idx").on(t.activityId),
+    index("subjective_test_entries_model_idx").on(t.modelName),
+  ],
+);
+
+export const subjectiveTestVotes = pgTable(
+  "subjective_test_votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => subjectiveTestActivities.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("subjective_test_votes_activity_user_idx").on(t.activityId, t.userId),
+    index("subjective_test_votes_activity_idx").on(t.activityId),
+  ],
+);
+
+export const subjectiveTestVoteItems = pgTable(
+  "subjective_test_vote_items",
+  {
+    voteId: uuid("vote_id")
+      .notNull()
+      .references(() => subjectiveTestVotes.id, { onDelete: "cascade" }),
+    entryId: uuid("entry_id")
+      .notNull()
+      .references(() => subjectiveTestEntries.id, { onDelete: "cascade" }),
+    rank: integer("rank").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.voteId, t.entryId] }),
+    uniqueIndex("subjective_test_vote_items_vote_rank_idx").on(t.voteId, t.rank),
   ],
 );
 
@@ -427,12 +514,15 @@ export const usersRelations = relations(users, ({ many }) => ({
   benchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkUploader" }),
   reviewedBenchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkReviewer" }),
   benchmarkResults: many(benchmarkResults),
+  subjectiveTestActivities: many(subjectiveTestActivities),
+  subjectiveTestVotes: many(subjectiveTestVotes),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   models: many(models),
   dimensions: many(dimensions),
   modelRequests: many(modelRequests),
+  subjectiveTestActivities: many(subjectiveTestActivities),
 }));
 
 export const dimensionsRelations = relations(dimensions, ({ one, many }) => ({
@@ -498,6 +588,50 @@ export const benchmarkResultsRelations = relations(benchmarkResults, ({ one }) =
   creator: one(users, {
     fields: [benchmarkResults.createdBy],
     references: [users.id],
+  }),
+}));
+
+export const subjectiveTestActivitiesRelations = relations(subjectiveTestActivities, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [subjectiveTestActivities.categoryId],
+    references: [categories.id],
+  }),
+  creator: one(users, {
+    fields: [subjectiveTestActivities.createdBy],
+    references: [users.id],
+  }),
+  entries: many(subjectiveTestEntries),
+  votes: many(subjectiveTestVotes),
+}));
+
+export const subjectiveTestEntriesRelations = relations(subjectiveTestEntries, ({ one, many }) => ({
+  activity: one(subjectiveTestActivities, {
+    fields: [subjectiveTestEntries.activityId],
+    references: [subjectiveTestActivities.id],
+  }),
+  voteItems: many(subjectiveTestVoteItems),
+}));
+
+export const subjectiveTestVotesRelations = relations(subjectiveTestVotes, ({ one, many }) => ({
+  activity: one(subjectiveTestActivities, {
+    fields: [subjectiveTestVotes.activityId],
+    references: [subjectiveTestActivities.id],
+  }),
+  user: one(users, {
+    fields: [subjectiveTestVotes.userId],
+    references: [users.id],
+  }),
+  items: many(subjectiveTestVoteItems),
+}));
+
+export const subjectiveTestVoteItemsRelations = relations(subjectiveTestVoteItems, ({ one }) => ({
+  vote: one(subjectiveTestVotes, {
+    fields: [subjectiveTestVoteItems.voteId],
+    references: [subjectiveTestVotes.id],
+  }),
+  entry: one(subjectiveTestEntries, {
+    fields: [subjectiveTestVoteItems.entryId],
+    references: [subjectiveTestEntries.id],
   }),
 }));
 

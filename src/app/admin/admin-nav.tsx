@@ -13,6 +13,7 @@ const ITEMS = [
   { href: "/admin/models", label: "模型管理" },
   { href: "/admin/model-requests", label: "模型申请" },
   { href: "/admin/benchmarks", label: "基准测试" },
+  { href: "/admin/subjective-tests", label: "主观测试" },
   { href: "/admin/votes", label: "投票管理" },
   { href: "/admin/categories", label: "分类管理" },
   { href: "/admin/dimensions", label: "维度管理" },
