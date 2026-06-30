@@ -5,7 +5,7 @@
  * 不再把 providers 里的 endpoint/路由商别名单独导入为模型。
  */
 import { db } from "@/db";
-import { categories, models } from "@/db/schema";
+import { categories, models, syncStates } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { suggestSlug } from "./slug";
 
@@ -64,8 +64,16 @@ export type ModelsDevSyncResult = {
   archived: number;
 };
 
+const MODELS_DEV_SYNC_STATE_KEY = "models.dev";
+const DEFAULT_MODELS_DEV_LAST_SYNC_AT = new Date("2026-06-30T00:00:00.000Z");
+
 export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
-  const candidates = await fetchCanonicalModels();
+  const runStartedAt = new Date();
+  const lastSyncedAt = await getModelsDevLastSyncedAt();
+  const releaseCutoff = toDateOnly(lastSyncedAt);
+  const candidates = (await fetchCanonicalModels()).filter(
+    (candidate) => candidate.releasedAt !== null && candidate.releasedAt >= releaseCutoff,
+  );
 
   const [categoryRows, existingRows] = await Promise.all([
     db.select({ id: categories.id, slug: categories.slug }).from(categories),
@@ -81,7 +89,6 @@ export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
   ]);
 
   const categoryIdBySlug = new Map(categoryRows.map((c) => [c.slug, c.id]));
-  const textCategoryId = categoryIdBySlug.get("text");
   const byModelsDevId = new Map(
     existingRows
       .filter((m) => m.modelsDevId)
@@ -90,21 +97,10 @@ export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
   const bySlug = new Map(existingRows.map((m) => [m.slug, m]));
   const usedSlugs = new Set(existingRows.map((m) => m.slug));
 
-  const candidateIds = new Set(candidates.map((candidate) => candidate.modelsDevId));
   let created = 0;
   let updated = 0;
   let skipped = 0;
-  let archived = 0;
-
-  for (const existing of existingRows) {
-    if (!existing.modelsDevId || candidateIds.has(existing.modelsDevId)) continue;
-    if (textCategoryId === undefined || existing.categoryId !== textCategoryId) continue;
-    await db
-      .update(models)
-      .set({ status: "archived", updatedAt: new Date() })
-      .where(eq(models.id, existing.id));
-    archived++;
-  }
+  const archived = 0;
 
   for (const candidate of candidates) {
     const categoryId = categoryIdBySlug.get(candidate.categorySlug);
@@ -202,6 +198,8 @@ export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
     }
   }
 
+  await setModelsDevLastSyncedAt(runStartedAt);
+
   return {
     fetched: candidates.length,
     synced: created + updated,
@@ -214,6 +212,35 @@ export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
 
 const MODELS_DEV_TREE_URL = "https://api.github.com/repos/anomalyco/models.dev/git/trees/dev?recursive=1";
 const MODELS_DEV_RAW_BASE = "https://raw.githubusercontent.com/anomalyco/models.dev/dev";
+
+async function getModelsDevLastSyncedAt(): Promise<Date> {
+  const [row] = await db
+    .select({ lastSyncedAt: syncStates.lastSyncedAt })
+    .from(syncStates)
+    .where(eq(syncStates.key, MODELS_DEV_SYNC_STATE_KEY));
+  return row?.lastSyncedAt ?? DEFAULT_MODELS_DEV_LAST_SYNC_AT;
+}
+
+async function setModelsDevLastSyncedAt(value: Date): Promise<void> {
+  await db
+    .insert(syncStates)
+    .values({
+      key: MODELS_DEV_SYNC_STATE_KEY,
+      lastSyncedAt: value,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: syncStates.key,
+      set: {
+        lastSyncedAt: value,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+function toDateOnly(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
 
 async function fetchWithRetry(input: string, init?: RequestInit): Promise<Response> {
   let lastError: unknown;

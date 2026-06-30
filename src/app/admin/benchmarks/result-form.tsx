@@ -19,6 +19,7 @@ async function submit(_prevState: State, formData: FormData): Promise<State> {
 }
 
 type ResultInitialValue = {
+  id?: string;
   modelName: string;
   isCorrect: boolean;
   modelAnswer?: string | null;
@@ -37,6 +38,7 @@ export function BenchmarkResultForm({
   return (
     <form action={formAction} className="mt-4 space-y-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900/60">
       <input type="hidden" name="questionId" value={questionId} />
+      {initialValue?.id && <input type="hidden" name="resultId" value={initialValue.id} />}
       <div className="grid gap-3 md:grid-cols-[1fr_120px]">
         <input
           name="modelName"

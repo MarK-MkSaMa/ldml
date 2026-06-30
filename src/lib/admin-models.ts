@@ -134,9 +134,6 @@ export async function createModelAdmin(input: ModelInput): Promise<AdminModelRow
     .from(categories)
     .where(eq(categories.id, data.categoryId));
   if (!category) throw new Error("分类不存在");
-  if (category.slug !== "image" && category.slug !== "video") {
-    throw new Error("后台只能手动添加生图或生视频模型");
-  }
 
   const [row] = await db
     .insert(models)

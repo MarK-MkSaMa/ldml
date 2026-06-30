@@ -75,6 +75,7 @@ export async function upsertBenchmarkResultAction(formData: FormData) {
   if (isCorrectValue !== "true" && isCorrectValue !== "false") throw new Error("请选择判题结果");
 
   await upsertBenchmarkResult({
+    id: getString(formData, "resultId") || null,
     questionId,
     modelName,
     isCorrect: isCorrectValue === "true",

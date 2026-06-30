@@ -1,8 +1,8 @@
 /**
- * 新建生图 / 生视频模型
+ * 新建模型
  */
 import Link from "next/link";
-import { asc, inArray } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { ModelForm } from "../model-form";
@@ -12,8 +12,13 @@ export default async function NewModelPage() {
   const categoryRows = await db
     .select()
     .from(categories)
-    .where(inArray(categories.slug, ["image", "video"]))
     .orderBy(asc(categories.order));
+  const defaultCategory = categoryRows[0];
+  const defaultOutputModalities = defaultCategory?.slug === "video"
+    ? "video"
+    : defaultCategory?.slug === "image"
+      ? "image"
+      : "text";
 
   return (
     <div>
@@ -22,23 +27,23 @@ export default async function NewModelPage() {
           ← 返回模型列表
         </Link>
       </nav>
-      <h1 className="mb-2 text-2xl font-bold tracking-tight">添加生图 / 生视频模型</h1>
+      <h1 className="mb-2 text-2xl font-bold tracking-tight">添加模型</h1>
       <p className="mb-6 text-sm text-zinc-500">
-        文字模型由 models.dev 同步维护；这里仅用于手动维护生图和生视频模型。
+        手动添加的模型不会绑定 models.dev，同步任务不会覆盖这些记录。
       </p>
 
       {categoryRows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-zinc-300 px-6 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
-          未找到生图或生视频分类，请先在分类管理中创建 image / video 分类。
+          暂无可用分类，请先在分类管理中创建分类。
         </p>
       ) : (
         <ModelForm
           initial={{
-            categoryId: categoryRows[0]?.id ?? 0,
+            categoryId: defaultCategory?.id ?? 0,
             status: "observing",
             openWeights: "unknown",
             inputModalities: "text,image",
-            outputModalities: categoryRows[0]?.slug === "video" ? "video" : "image",
+            outputModalities: defaultOutputModalities,
           }}
           categories={categoryRows}
           action={createModelAction}

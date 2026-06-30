@@ -123,9 +123,6 @@ function QuestionGrid({ questions }: { questions: PublicBenchmarkQuestion[] }) {
 }
 
 function QuestionCard({ question }: { question: PublicBenchmarkQuestion }) {
-  const correctCount = question.correctModels.length;
-  const wrongCount = question.wrongModels.length;
-
   return (
     <li className="flex min-h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
@@ -143,10 +140,9 @@ function QuestionCard({ question }: { question: PublicBenchmarkQuestion }) {
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-3 text-xs dark:border-zinc-800">
-        <Badge tone="green">正确 {correctCount}</Badge>
-        <Badge tone="red">错误 {wrongCount}</Badge>
-        <Badge tone="zinc">共 {correctCount + wrongCount} 个结果</Badge>
+      <div className="mt-4 space-y-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <ModelPills title="正确" models={question.correctModels} tone="green" />
+        <ModelPills title="错误" models={question.wrongModels} tone="red" />
       </div>
     </li>
   );
@@ -171,14 +167,39 @@ function CompactBlock({
   );
 }
 
-function Badge({ children, tone }: { children: React.ReactNode; tone: "green" | "red" | "zinc" }) {
+function ModelPills({
+  title,
+  models,
+  tone,
+}: {
+  title: string;
+  models: string[];
+  tone: "green" | "red";
+}) {
+  return (
+    <div>
+      <div className="mb-1 text-xs font-medium text-zinc-500">{title}</div>
+      {models.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-zinc-200 px-2 py-1 text-xs text-zinc-400 dark:border-zinc-800">
+          暂无
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {models.map((model) => (
+            <Badge key={model} tone={tone}>{model}</Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Badge({ children, tone }: { children: React.ReactNode; tone: "green" | "red" }) {
   const cls =
     tone === "green"
       ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300"
-      : tone === "red"
-        ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300"
-        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300";
-  return <span className={`rounded-full px-2 py-1 ${cls}`}>{children}</span>;
+      : "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300";
+  return <span className={`rounded-full px-2 py-1 text-xs ${cls}`}>{children}</span>;
 }
 
 function formatRate(value: number) {

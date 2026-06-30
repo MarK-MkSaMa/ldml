@@ -20,6 +20,7 @@ export type BenchmarkQuestionInput = {
 export type BenchmarkQuestionAdminInput = Omit<BenchmarkQuestionInput, "uploaderId">;
 
 export type BenchmarkResultInput = {
+  id?: string | null;
   questionId: string;
   modelName: string;
   isCorrect: boolean;
@@ -64,6 +65,7 @@ function validateQuestionInput(input: BenchmarkQuestionInput) {
 
 function cleanResultInput(input: BenchmarkResultInput) {
   return {
+    id: input.id?.trim() || null,
     questionId: input.questionId,
     modelName: input.modelName.trim(),
     isCorrect: input.isCorrect,
@@ -377,6 +379,23 @@ export async function upsertBenchmarkResult(input: BenchmarkResultInput) {
     .from(benchmarkQuestions)
     .where(eq(benchmarkQuestions.id, data.questionId));
   if (!question) throw new Error("题目不存在");
+
+  if (data.id) {
+    const [row] = await db
+      .update(benchmarkResults)
+      .set({
+        modelName: data.modelName,
+        isCorrect: data.isCorrect,
+        modelAnswer: data.modelAnswer,
+        note: data.note,
+        createdBy: data.createdBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(benchmarkResults.id, data.id))
+      .returning();
+    if (!row) throw new Error("测试结果不存在");
+    return row;
+  }
 
   const [row] = await db
     .insert(benchmarkResults)

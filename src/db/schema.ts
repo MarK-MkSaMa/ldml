@@ -57,6 +57,12 @@ export const licenses = pgTable("licenses", {
 // ============================================================
 // 3. 分类（文字 / 生图 / 生视频）
 // ============================================================
+export const syncStates = pgTable("sync_states", {
+  key: text("key").primaryKey(),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull().unique(), // text | image | video
