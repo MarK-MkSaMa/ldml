@@ -529,7 +529,7 @@ function Th({
 
 function formatWeight(openWeights: boolean | null): string | null {
   if (openWeights === null) return null;
-  return openWeights ? "Open weights" : "Closed weights";
+  return openWeights ? "开源权重" : "闭源权重";
 }
 
 function getValue(row: ModelRow, key: SortKey): string | number | null {

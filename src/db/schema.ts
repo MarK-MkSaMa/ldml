@@ -106,7 +106,7 @@ export const models = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     vendor: text("vendor"), // 兼容旧字段；同步时写入 lab
-    modelsDevId: text("models_dev_id").unique(),
+    modelsDevId: text("models_dev_id"),
     lab: text("lab"), // OpenAI / Anthropic / ...
     homepageUrl: text("homepage_url"),
     releasedAt: date("released_at"),
@@ -134,13 +134,17 @@ export const models = pgTable(
   (t) => [
     index("models_status_idx").on(t.status),
     index("models_category_idx").on(t.categoryId),
+    uniqueIndex("models_models_dev_id_unique").on(t.modelsDevId).where(sql`${t.modelsDevId} is not null`),
     index("models_lab_idx").on(t.lab),
   ],
 );
 
 // ============================================================
-// 6. 基准测试题库状态
+// 6. 模型申请工单状态
 // ============================================================
+export const modelRequestStatusEnum = ["pending", "approved", "rejected"] as const;
+export type ModelRequestStatus = (typeof modelRequestStatusEnum)[number];
+
 export const benchmarkQuestionStatusEnum = [
   "pending",
   "approved",
@@ -153,7 +157,55 @@ export const subjectiveTestStatusEnum = ["draft", "published", "archived"] as co
 export type SubjectiveTestStatus = (typeof subjectiveTestStatusEnum)[number];
 
 // ============================================================
-// 7. 基准测试题库与结果
+// 7. 模型申请工单
+// ============================================================
+export const modelRequests = pgTable(
+  "model_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    lab: text("lab"),
+    homepageUrl: text("homepage_url"),
+    releasedAt: date("released_at"),
+    contextTokens: integer("context_tokens"),
+    outputTokens: integer("output_tokens"),
+    inputModalities: jsonb("input_modalities").$type<string[]>(),
+    outputModalities: jsonb("output_modalities").$type<string[]>(),
+    supportsReasoning: boolean("supports_reasoning").notNull().default(false),
+    supportsToolCall: boolean("supports_tool_call").notNull().default(false),
+    openWeights: boolean("open_weights"),
+    price: jsonb("price").$type<{
+      input?: number;
+      output?: number;
+      cacheRead?: number;
+      cacheWrite?: number;
+    }>(),
+    status: text("status", { enum: modelRequestStatusEnum })
+      .notNull()
+      .default("pending"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"),
+    createdModelId: uuid("created_model_id").references(() => models.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("model_requests_status_idx").on(t.status),
+    index("model_requests_requester_idx").on(t.requesterId),
+    index("model_requests_slug_idx").on(t.slug),
+  ],
+);
+
+// ============================================================
+// 8. 基准测试题库与结果
 // ============================================================
 export const benchmarkQuestions = pgTable(
   "benchmark_questions",
@@ -494,6 +546,8 @@ export const bannedKeywords = pgTable("banned_keywords", {
 export const usersRelations = relations(users, ({ many }) => ({
   votes: many(votes),
   comments: many(comments),
+  modelRequests: many(modelRequests, { relationName: "requester" }),
+  reviewedModelRequests: many(modelRequests, { relationName: "reviewer" }),
   benchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkUploader" }),
   reviewedBenchmarkQuestions: many(benchmarkQuestions, { relationName: "benchmarkReviewer" }),
   benchmarkResults: many(benchmarkResults),
@@ -504,6 +558,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const categoriesRelations = relations(categories, ({ many }) => ({
   models: many(models),
   dimensions: many(dimensions),
+  modelRequests: many(modelRequests),
   subjectiveTestActivities: many(subjectiveTestActivities),
 }));
 
@@ -524,6 +579,28 @@ export const modelsRelations = relations(models, ({ one, many }) => ({
   votes: many(votes),
   comments: many(comments),
   stats: many(modelStats),
+  modelRequests: many(modelRequests),
+}));
+
+export const modelRequestsRelations = relations(modelRequests, ({ one }) => ({
+  requester: one(users, {
+    fields: [modelRequests.requesterId],
+    references: [users.id],
+    relationName: "requester",
+  }),
+  category: one(categories, {
+    fields: [modelRequests.categoryId],
+    references: [categories.id],
+  }),
+  reviewer: one(users, {
+    fields: [modelRequests.reviewedBy],
+    references: [users.id],
+    relationName: "reviewer",
+  }),
+  createdModel: one(models, {
+    fields: [modelRequests.createdModelId],
+    references: [models.id],
+  }),
 }));
 
 export const benchmarkQuestionsRelations = relations(benchmarkQuestions, ({ one, many }) => ({

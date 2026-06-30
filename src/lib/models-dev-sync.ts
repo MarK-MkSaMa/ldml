@@ -65,7 +65,7 @@ export type ModelsDevSyncResult = {
 };
 
 const MODELS_DEV_SYNC_STATE_KEY = "models.dev";
-const DEFAULT_MODELS_DEV_LAST_SYNC_AT = new Date("2026-06-30T00:00:00.000Z");
+const DEFAULT_MODELS_DEV_LAST_SYNC_AT = new Date("2026-04-01T00:00:00.000Z");
 
 export async function syncModelsFromModelsDev(): Promise<ModelsDevSyncResult> {
   const runStartedAt = new Date();

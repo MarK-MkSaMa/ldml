@@ -158,7 +158,7 @@ export function ModelForm({
         />
       </Row>
 
-      <Row label="Release">
+      <Row label="发布日期">
         <input
           name="releasedAt"
           type="date"
@@ -169,7 +169,7 @@ export function ModelForm({
       </Row>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="Context tokens">
+        <Row label="上下文 tokens">
           <input
             name="contextTokens"
             type="number"
@@ -180,7 +180,7 @@ export function ModelForm({
             placeholder="128000"
           />
         </Row>
-        <Row label="Output tokens">
+        <Row label="最大输出 tokens">
           <input
             name="outputTokens"
             type="number"
@@ -194,7 +194,7 @@ export function ModelForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="Input modalities" hint="逗号分隔，例如 text,image">
+        <Row label="输入类型" hint="逗号分隔，例如 text,image">
           <input
             name="inputModalities"
             value={state.inputModalities}
@@ -203,7 +203,7 @@ export function ModelForm({
             placeholder="text,image"
           />
         </Row>
-        <Row label="Output modalities" hint="逗号分隔，例如 text">
+        <Row label="输出类型" hint="逗号分隔，例如 text">
           <input
             name="outputModalities"
             value={state.outputModalities}
@@ -223,7 +223,7 @@ export function ModelForm({
             onChange={(e) => update("supportsReasoning", e.target.checked)}
             className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
           />
-          支持 reasoning
+          支持推理
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -233,11 +233,11 @@ export function ModelForm({
             onChange={(e) => update("supportsToolCall", e.target.checked)}
             className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
           />
-          支持 tool call
+          支持工具调用
         </label>
       </div>
 
-      <Row label="Weight">
+      <Row label="权重">
         <select
           name="openWeights"
           value={state.openWeights}
@@ -245,13 +245,13 @@ export function ModelForm({
           className={inputCls}
         >
           <option value="unknown">未知</option>
-          <option value="true">Open weights</option>
-          <option value="false">Closed weights</option>
+          <option value="true">开源权重</option>
+          <option value="false">闭源权重</option>
         </select>
       </Row>
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Row label="Price input">
+        <Row label="输入价格">
           <input
             name="priceInput"
             type="number"
@@ -262,7 +262,7 @@ export function ModelForm({
             className={inputCls}
           />
         </Row>
-        <Row label="Price output">
+        <Row label="输出价格">
           <input
             name="priceOutput"
             type="number"
@@ -273,7 +273,7 @@ export function ModelForm({
             className={inputCls}
           />
         </Row>
-        <Row label="Cache read">
+        <Row label="缓存读取">
           <input
             name="priceCacheRead"
             type="number"
@@ -284,7 +284,7 @@ export function ModelForm({
             className={inputCls}
           />
         </Row>
-        <Row label="Cache write">
+        <Row label="缓存写入">
           <input
             name="priceCacheWrite"
             type="number"

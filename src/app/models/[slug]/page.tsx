@@ -83,7 +83,7 @@ export default async function ModelDetailPage({
 
         {/* 基本信息 */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">{model.name}</h1>
               {model.status === "observing" && (
@@ -94,7 +94,7 @@ export default async function ModelDetailPage({
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
               {model.lab && <span>来源：{model.lab}</span>}
-              {model.openWeights !== null && <span>Weight：{formatWeight(model.openWeights)}</span>}
+              {model.openWeights !== null && <span>权重：{formatWeight(model.openWeights)}</span>}
             </div>
             <ModelMetadata model={model} />
           </div>
@@ -198,27 +198,27 @@ type DetailModel = NonNullable<Awaited<ReturnType<typeof getModelBySlug>>>;
 
 function ModelMetadata({ model }: { model: DetailModel }) {
   const rows = [
-    { label: "Context", value: formatTokens(model.contextTokens) },
-    { label: "Output", value: formatTokens(model.outputTokens) },
-    { label: "Input", value: formatList(model.inputModalities) },
-    { label: "Output modalities", value: formatList(model.outputModalities) },
-    { label: "Reasoning", value: model.supportsReasoning ? "支持" : "—" },
-    { label: "Tool call", value: model.supportsToolCall ? "支持" : "—" },
-    { label: "Price", value: formatPrice(model.price) },
-    { label: "Release", value: model.releasedAt ?? "—" },
+    { label: "上下文", value: formatTokens(model.contextTokens) },
+    { label: "最大输出", value: formatTokens(model.outputTokens) },
+    { label: "输入类型", value: formatList(model.inputModalities) },
+    { label: "输出类型", value: formatList(model.outputModalities) },
+    { label: "推理", value: model.supportsReasoning ? "支持" : "—" },
+    { label: "工具调用", value: model.supportsToolCall ? "支持" : "—" },
+    { label: "价格", value: formatPrice(model.price) },
+    { label: "发布日期", value: model.releasedAt ?? "—" },
   ].filter((row) => row.value !== "—");
 
   if (rows.length === 0) return null;
 
   return (
-    <dl className="mt-4 grid gap-2 text-xs text-zinc-500 sm:grid-cols-2 lg:grid-cols-4">
+    <dl className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-500">
       {rows.map((row) => (
         <div
           key={row.label}
-          className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+          className="min-w-[6.5rem] max-w-[14rem] rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
         >
           <dt className="font-medium text-zinc-700 dark:text-zinc-300">{row.label}</dt>
-          <dd className="mt-1 break-words">{row.value}</dd>
+          <dd className="mt-1 truncate" title={row.value}>{row.value}</dd>
         </div>
       ))}
     </dl>
@@ -226,7 +226,7 @@ function ModelMetadata({ model }: { model: DetailModel }) {
 }
 
 function formatWeight(openWeights: boolean): string {
-  return openWeights ? "Open weights" : "Closed weights";
+  return openWeights ? "开源权重" : "闭源权重";
 }
 
 function formatTokens(value: number | null): string {
@@ -240,10 +240,10 @@ function formatList(values: string[] | null): string {
 function formatPrice(price: DetailModel["price"]): string {
   if (!price) return "—";
   const parts = [
-    price.input !== undefined ? `Input $${price.input}` : null,
-    price.output !== undefined ? `Output $${price.output}` : null,
-    price.cacheRead !== undefined ? `Cache read $${price.cacheRead}` : null,
-    price.cacheWrite !== undefined ? `Cache write $${price.cacheWrite}` : null,
+    price.input !== undefined ? `输入 $${price.input}` : null,
+    price.output !== undefined ? `输出 $${price.output}` : null,
+    price.cacheRead !== undefined ? `缓存读取 $${price.cacheRead}` : null,
+    price.cacheWrite !== undefined ? `缓存写入 $${price.cacheWrite}` : null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" / ") : "—";
 }

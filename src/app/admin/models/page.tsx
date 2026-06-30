@@ -102,7 +102,7 @@ export default async function AdminModelsPage({
               <tr>
                 <th className="px-4 py-3 font-medium">名称</th>
                 <th className="px-4 py-3 font-medium">来源 lab</th>
-                <th className="px-4 py-3 font-medium">Weight</th>
+                <th className="px-4 py-3 font-medium">权重</th>
                 <th className="px-4 py-3 font-medium">分类</th>
                 <th className="px-4 py-3 font-medium">状态</th>
                 <th className="px-4 py-3 font-medium">置顶</th>
@@ -133,7 +133,7 @@ export default async function AdminModelsPage({
                       {m.lab ?? m.vendor ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
-                      {m.openWeights === null ? "—" : m.openWeights ? "Open" : "Closed"}
+                      {m.openWeights === null ? "—" : m.openWeights ? "开源权重" : "闭源权重"}
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
                       {cat?.name ?? "?"}

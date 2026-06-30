@@ -69,6 +69,7 @@ export default function Home() {
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">快速入口</h2>
             <div className="mt-4 space-y-3">
               <QuickLink href="/benchmarks/submit" label="添加题库题目" />
+              <QuickLink href="/model-requests/new?category=text" label="申请添加新模型" />
               <QuickLink href="/announcements" label="查看站点公告" />
               <QuickExternalLink href="https://linux.do/t/topic/2255927" label="Linux DO 网站主贴" />
             </div>
