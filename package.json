@@ -14,6 +14,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-demo": "tsx src/db/seed-demo.ts",
+    "models:sync": "tsx src/scripts/sync-models-dev.ts",
     "db:reset-votes": "tsx src/db/reset-votes.ts",
     "db:reset-demo": "tsx src/db/reset-demo.ts",
     "db:reset-all": "tsx src/db/reset-all.ts"

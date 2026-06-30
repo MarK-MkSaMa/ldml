@@ -9,12 +9,34 @@
  *   - 权重存 localStorage，键 = 分类下所有 dimensionId 的稳定排序
  *   - 默认全部权重 = 1（等权，与服务端一致）
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DimensionInfo, ModelRow } from "@/lib/rankings";
 
 type SortKey = "name" | "overall" | "votes" | `dim:${number}`;
 type SortOrder = "asc" | "desc";
+
+function readStoredWeights(
+  storageFullKey: string | null,
+  dimensions: DimensionInfo[],
+): Record<number, number> {
+  if (!storageFullKey || typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(storageFullKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    const cleaned: Record<number, number> = {};
+    for (const d of dimensions) {
+      const v = parsed[String(d.id)];
+      if (typeof v === "number" && v >= 0 && v <= 5) {
+        cleaned[d.id] = v;
+      }
+    }
+    return cleaned;
+  } catch {
+    return {};
+  }
+}
 
 export function RankingTable({
   dimensions,
@@ -33,31 +55,12 @@ export function RankingTable({
   // null 表示默认排序（页面传入的顺序），不为 null 时按指定列排
   const [sort, setSort] = useState<{ key: SortKey; order: SortOrder } | null>(null);
 
-  // 自定义权重：dimensionId -> 0..5（0 表示不参与综合分）
-  const [weights, setWeights] = useState<Record<number, number>>({});
-  const [prefsOpen, setPrefsOpen] = useState(false);
-
-  // 客户端 mount 后读 localStorage（避免 SSR 不一致）
+  // 客户端读 localStorage（服务端渲染时 readStoredWeights 会返回空对象）
   const storageFullKey = storageKey ? `dimensionWeights:${storageKey}` : null;
-  useEffect(() => {
-    if (!storageFullKey) return;
-    try {
-      const raw = localStorage.getItem(storageFullKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, number>;
-        const cleaned: Record<number, number> = {};
-        for (const d of dimensions) {
-          const v = parsed[String(d.id)];
-          if (typeof v === "number" && v >= 0 && v <= 5) {
-            cleaned[d.id] = v;
-          }
-        }
-        if (Object.keys(cleaned).length > 0) setWeights(cleaned);
-      }
-    } catch {
-      // 忽略损坏数据
-    }
-  }, [storageFullKey, dimensions]);
+  const [weights, setWeights] = useState<Record<number, number>>(() =>
+    readStoredWeights(storageFullKey, dimensions),
+  );
+  const [prefsOpen, setPrefsOpen] = useState(false);
 
   function getWeight(dimId: number): number {
     return weights[dimId] ?? 1;
@@ -309,12 +312,12 @@ export function RankingTable({
                 <div className="truncate font-medium" title={m.name}>
                   {m.name}
                 </div>
-                {(m.vendor || m.licenseText) && (
+                {(m.lab || m.openWeights !== null) && (
                   <div
                     className="truncate text-xs text-zinc-500"
-                    title={[m.vendor, m.licenseText].filter(Boolean).join(" · ")}
+                    title={[m.lab, formatWeight(m.openWeights)].filter(Boolean).join(" · ")}
                   >
-                    {[m.vendor, m.licenseText].filter(Boolean).join(" · ")}
+                    {[m.lab, formatWeight(m.openWeights)].filter(Boolean).join(" · ")}
                   </div>
                 )}
               </td>
@@ -427,12 +430,12 @@ function MobileCard({
           <div className="truncate font-medium" title={m.name}>
             {m.name}
           </div>
-          {m.vendor && (
-            <div className="truncate text-xs text-zinc-500">{m.vendor}</div>
+          {m.lab && (
+            <div className="truncate text-xs text-zinc-500">{m.lab}</div>
           )}
-          {m.licenseText && (
+          {m.openWeights !== null && (
             <div className="mt-1 inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-              {m.licenseText}
+              {formatWeight(m.openWeights)}
             </div>
           )}
         </div>
@@ -522,6 +525,11 @@ function Th({
       </span>
     </th>
   );
+}
+
+function formatWeight(openWeights: boolean | null): string | null {
+  if (openWeights === null) return null;
+  return openWeights ? "Open weights" : "Closed weights";
 }
 
 function getValue(row: ModelRow, key: SortKey): string | number | null {

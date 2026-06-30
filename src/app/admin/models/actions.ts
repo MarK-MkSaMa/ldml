@@ -11,11 +11,48 @@ import {
   deleteModelAdmin,
   setModelStatusAdmin,
   setModelPinnedAdmin,
+  type ModelPrice,
 } from "@/lib/admin-models";
 import { requireAdminFresh } from "@/lib/current-user";
 import { promoteEligibleModels } from "@/lib/promotion";
+import { syncModelsFromModelsDev } from "@/lib/models-dev-sync";
 import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
+
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n);
+}
+
+function parseCsv(value: string): string[] | null {
+  const items = value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  return items.length > 0 ? items : null;
+}
+
+function parsePrice(formData: FormData): ModelPrice | null {
+  const get = (k: string) => {
+    const v = formData.get(k);
+    return typeof v === "string" ? v.trim() : "";
+  };
+  const price: ModelPrice = {};
+  for (const [field, key] of [
+    ["priceInput", "input"],
+    ["priceOutput", "output"],
+    ["priceCacheRead", "cacheRead"],
+    ["priceCacheWrite", "cacheWrite"],
+  ] as const) {
+    const raw = get(field);
+    if (!raw) continue;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) price[key] = n;
+  }
+  return Object.keys(price).length > 0 ? price : null;
+}
 
 function parseInput(formData: FormData) {
   const get = (k: string) => {
@@ -30,10 +67,20 @@ function parseInput(formData: FormData) {
     name: get("name"),
     slug: get("slug"),
     categoryId: Number(get("categoryId")),
-    vendor: get("vendor") || null,
-    licenseText: get("licenseText") || null,
+    lab: get("lab") || null,
     homepageUrl: get("homepageUrl") || null,
     releasedAt: get("releasedAt") || null,
+    contextTokens: parseOptionalNumber(get("contextTokens")),
+    outputTokens: parseOptionalNumber(get("outputTokens")),
+    inputModalities: parseCsv(get("inputModalities")),
+    outputModalities: parseCsv(get("outputModalities")),
+    supportsReasoning: formData.get("supportsReasoning") === "on",
+    supportsToolCall: formData.get("supportsToolCall") === "on",
+    openWeights:
+      formData.get("openWeights") === "unknown"
+        ? null
+        : formData.get("openWeights") === "true",
+    price: parsePrice(formData),
     status,
     pinned: formData.get("pinned") === "on",
   };
@@ -91,5 +138,12 @@ export async function promoteEligibleAction(): Promise<{
   await requireAdminFresh();
   const result = await promoteEligibleModels();
   if (result.promoted > 0) bust();
+  return result;
+}
+
+export async function syncModelsDevAction() {
+  await requireAdminFresh();
+  const result = await syncModelsFromModelsDev();
+  bust();
   return result;
 }

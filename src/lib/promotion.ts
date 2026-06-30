@@ -2,7 +2,7 @@
  * 观察区自动晋升
  *
  * 规则：observing 模型满足以下任一条件即转为 listed：
- *   1. publishedAt 距今 >= OBSERVE_DAYS 天
+ *   1. releasedAt 距今 >= OBSERVE_DAYS 天
  *   2. 任一维度的票数 >= OBSERVE_VOTES
  *
  * 触发时机：
@@ -24,18 +24,15 @@ export async function maybePromoteModel(modelId: string): Promise<boolean> {
     .select({
       id: models.id,
       status: models.status,
-      publishedAt: models.publishedAt,
+      releasedAt: models.releasedAt,
     })
     .from(models)
     .where(eq(models.id, modelId));
   if (!m || m.status !== "observing") return false;
 
-  // 条件 1：发布时间够久
-  const daysSincePublish =
-    m.publishedAt === null
-      ? 0
-      : (Date.now() - m.publishedAt.getTime()) / (1000 * 60 * 60 * 24);
-  const eligibleByTime = daysSincePublish >= OBSERVE_DAYS;
+  // 条件 1：release 日期够久
+  const daysSinceRelease = daysSinceDateString(m.releasedAt);
+  const eligibleByTime = daysSinceRelease >= OBSERVE_DAYS;
 
   // 条件 2：任一维度票数够多
   let eligibleByVotes = false;
@@ -54,6 +51,14 @@ export async function maybePromoteModel(modelId: string): Promise<boolean> {
     .set({ status: "listed", updatedAt: new Date() })
     .where(and(eq(models.id, modelId), eq(models.status, "observing")));
   return true;
+}
+
+function daysSinceDateString(value: string | null): number {
+  if (!value) return 0;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  const time = date.getTime();
+  if (!Number.isFinite(time)) return 0;
+  return (Date.now() - time) / (1000 * 60 * 60 * 24);
 }
 
 /**

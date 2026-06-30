@@ -26,10 +26,11 @@ export type ModelRow = {
   id: string;
   slug: string;
   name: string;
-  vendor: string | null;
-  licenseText: string | null;
+  lab: string | null;
+  openWeights: boolean | null;
   status: "draft" | "observing" | "listed" | "archived";
   pinned: boolean;
+  releasedAt: string | null;
   publishedAt: Date | null;
   // dimensionId -> { avg, weighted, count }
   scores: Record<number, { avg: number | null; weighted: number | null; count: number }>;
@@ -107,10 +108,11 @@ async function getRankingUncached(
       id: m.id,
       slug: m.slug,
       name: m.name,
-      vendor: m.vendor,
-      licenseText: m.licenseText,
+      lab: m.lab ?? m.vendor,
+      openWeights: m.openWeights,
       status: m.status,
       pinned: m.pinned,
+      releasedAt: m.releasedAt,
       publishedAt: m.publishedAt,
       scores,
       overall: avgCount > 0 ? avgSum / avgCount : null,

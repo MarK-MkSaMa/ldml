@@ -50,13 +50,19 @@ export async function listActiveAnnouncements(): Promise<Announcement[]> {
  * 横条要显示的那条：active + pinned + 最新一条
  */
 export async function getActiveBannerAnnouncement(): Promise<Announcement | null> {
-  const [row] = await db
-    .select()
-    .from(announcements)
-    .where(and(eq(announcements.isActive, true), eq(announcements.isPinned, true)))
-    .orderBy(desc(announcements.publishedAt))
-    .limit(1);
-  return row ?? null;
+  try {
+    const [row] = await db
+      .select()
+      .from(announcements)
+      .where(and(eq(announcements.isActive, true), eq(announcements.isPinned, true)))
+      .orderBy(desc(announcements.publishedAt))
+      .limit(1);
+    return row ?? null;
+  } catch (error) {
+    // 公告横条是非核心能力；数据库尚未 push 或公告表异常时不应阻断首页/排行榜渲染。
+    console.error("getActiveBannerAnnouncement failed:", error);
+    return null;
+  }
 }
 
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {

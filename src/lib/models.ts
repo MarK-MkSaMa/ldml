@@ -14,10 +14,22 @@ export type ModelDetail = {
   id: string;
   slug: string;
   name: string;
-  vendor: string | null;
-  licenseText: string | null;
+  lab: string | null;
   homepageUrl: string | null;
   releasedAt: string | null;
+  contextTokens: number | null;
+  outputTokens: number | null;
+  inputModalities: string[] | null;
+  outputModalities: string[] | null;
+  supportsReasoning: boolean;
+  supportsToolCall: boolean;
+  openWeights: boolean | null;
+  price: {
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+  } | null;
   status: "draft" | "observing" | "listed" | "archived";
   category: { slug: string; name: string };
   dimensions: {
@@ -37,10 +49,18 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
       id: models.id,
       slug: models.slug,
       name: models.name,
+      lab: models.lab,
       vendor: models.vendor,
-      licenseText: models.licenseText,
       homepageUrl: models.homepageUrl,
       releasedAt: models.releasedAt,
+      contextTokens: models.contextTokens,
+      outputTokens: models.outputTokens,
+      inputModalities: models.inputModalities,
+      outputModalities: models.outputModalities,
+      supportsReasoning: models.supportsReasoning,
+      supportsToolCall: models.supportsToolCall,
+      openWeights: models.openWeights,
+      price: models.price,
       status: models.status,
       categoryId: models.categoryId,
     })
@@ -67,15 +87,21 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     .where(eq(modelStats.modelId, m.id));
   const statsByDim = new Map(stats.map((s) => [s.dimensionId, s]));
 
-
   return {
     id: m.id,
     slug: m.slug,
     name: m.name,
-    vendor: m.vendor,
-    licenseText: m.licenseText,
+    lab: m.lab ?? m.vendor,
     homepageUrl: m.homepageUrl,
     releasedAt: m.releasedAt,
+    contextTokens: m.contextTokens,
+    outputTokens: m.outputTokens,
+    inputModalities: m.inputModalities,
+    outputModalities: m.outputModalities,
+    supportsReasoning: m.supportsReasoning,
+    supportsToolCall: m.supportsToolCall,
+    openWeights: m.openWeights,
+    price: m.price,
     status: m.status,
     category: { slug: cat.slug, name: cat.name },
     dimensions: dims.map((d) => {

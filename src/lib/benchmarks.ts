@@ -17,6 +17,8 @@ export type BenchmarkQuestionInput = {
   judgeNote?: string | null;
 };
 
+export type BenchmarkQuestionAdminInput = Omit<BenchmarkQuestionInput, "uploaderId">;
+
 export type BenchmarkResultInput = {
   questionId: string;
   modelName: string;
@@ -28,6 +30,7 @@ export type BenchmarkResultInput = {
 
 export type PublicBenchmarkQuestion = Awaited<ReturnType<typeof listPublicBenchmarkQuestions>>[number];
 export type AdminBenchmarkQuestion = Awaited<ReturnType<typeof listBenchmarkQuestionsForAdmin>>[number];
+export type AdminBenchmarkQuestionDetail = NonNullable<Awaited<ReturnType<typeof getBenchmarkQuestionForAdmin>>>;
 export type BenchmarkLeaderboardRow = Awaited<ReturnType<typeof getBenchmarkLeaderboard>>[number];
 
 const QUESTION_MAX = 10000;
@@ -228,6 +231,92 @@ export async function listBenchmarkQuestionsForAdmin(filter: { status?: Benchmar
     ...question,
     results: grouped.get(question.id) ?? [],
   }));
+}
+
+export async function getBenchmarkQuestionForAdmin(id: string) {
+  const [question] = await db
+    .select({
+      id: benchmarkQuestions.id,
+      uploaderId: benchmarkQuestions.uploaderId,
+      uploaderName: users.username,
+      question: benchmarkQuestions.question,
+      referenceAnswer: benchmarkQuestions.referenceAnswer,
+      judgeNote: benchmarkQuestions.judgeNote,
+      status: benchmarkQuestions.status,
+      reviewedBy: benchmarkQuestions.reviewedBy,
+      reviewedAt: benchmarkQuestions.reviewedAt,
+      rejectReason: benchmarkQuestions.rejectReason,
+      createdAt: benchmarkQuestions.createdAt,
+      updatedAt: benchmarkQuestions.updatedAt,
+    })
+    .from(benchmarkQuestions)
+    .innerJoin(users, eq(benchmarkQuestions.uploaderId, users.id))
+    .where(eq(benchmarkQuestions.id, id));
+
+  if (!question) return null;
+
+  const results = await db
+    .select({
+      id: benchmarkResults.id,
+      questionId: benchmarkResults.questionId,
+      modelName: benchmarkResults.modelName,
+      isCorrect: benchmarkResults.isCorrect,
+      modelAnswer: benchmarkResults.modelAnswer,
+      note: benchmarkResults.note,
+      createdAt: benchmarkResults.createdAt,
+      updatedAt: benchmarkResults.updatedAt,
+    })
+    .from(benchmarkResults)
+    .where(eq(benchmarkResults.questionId, id))
+    .orderBy(asc(benchmarkResults.modelName));
+
+  return { ...question, results };
+}
+
+export async function updateBenchmarkQuestionAdmin(
+  id: string,
+  input: BenchmarkQuestionAdminInput,
+  reviewerId: string,
+) {
+  const [existing] = await db
+    .select({ uploaderId: benchmarkQuestions.uploaderId })
+    .from(benchmarkQuestions)
+    .where(eq(benchmarkQuestions.id, id));
+  if (!existing) throw new Error("题目不存在");
+
+  const data = validateQuestionInput({ ...input, uploaderId: existing.uploaderId });
+  const [updated] = await db
+    .update(benchmarkQuestions)
+    .set({
+      question: data.question,
+      referenceAnswer: data.referenceAnswer,
+      judgeNote: data.judgeNote,
+      reviewedBy: reviewerId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(benchmarkQuestions.id, id))
+    .returning();
+  if (!updated) throw new Error("题目不存在");
+  return updated;
+}
+
+export async function deleteBenchmarkQuestionAdmin(id: string) {
+  const [deleted] = await db
+    .delete(benchmarkQuestions)
+    .where(eq(benchmarkQuestions.id, id))
+    .returning({ id: benchmarkQuestions.id });
+  if (!deleted) throw new Error("题目不存在");
+  return deleted;
+}
+
+export async function deleteBenchmarkResultAdmin(id: string) {
+  const [deleted] = await db
+    .delete(benchmarkResults)
+    .where(eq(benchmarkResults.id, id))
+    .returning({ id: benchmarkResults.id, questionId: benchmarkResults.questionId });
+  if (!deleted) throw new Error("测试结果不存在");
+  return deleted;
 }
 
 export async function approveBenchmarkQuestion(id: string, reviewerId: string) {

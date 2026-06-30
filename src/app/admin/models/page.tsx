@@ -11,6 +11,7 @@ import type { ModelStatus } from "@/db/schema";
 import { modelStatusEnum } from "@/db/schema";
 import { ModelRowActions } from "./row-actions";
 import { PromoteButton } from "./promote-button";
+import { ModelsDevSyncButton } from "./models-dev-sync-button";
 import { asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -61,11 +62,12 @@ export default async function AdminModelsPage({
         <h1 className="text-2xl font-bold tracking-tight">模型管理</h1>
         <div className="flex items-center gap-3">
           <PromoteButton />
+          <ModelsDevSyncButton />
           <Link
             href="/admin/models/new"
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
-            + 新建模型
+            + 添加生图/生视频模型
           </Link>
         </div>
       </div>
@@ -99,7 +101,8 @@ export default async function AdminModelsPage({
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">名称</th>
-                <th className="px-4 py-3 font-medium">开源协议</th>
+                <th className="px-4 py-3 font-medium">来源 lab</th>
+                <th className="px-4 py-3 font-medium">Weight</th>
                 <th className="px-4 py-3 font-medium">分类</th>
                 <th className="px-4 py-3 font-medium">状态</th>
                 <th className="px-4 py-3 font-medium">置顶</th>
@@ -123,11 +126,14 @@ export default async function AdminModelsPage({
                         {m.name}
                       </Link>
                       <div className="text-xs text-zinc-500">
-                        {m.vendor ?? "—"} · /{m.slug}
+                        /{m.slug}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
-                      {m.licenseText || "—"}
+                      {m.lab ?? m.vendor ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
+                      {m.openWeights === null ? "—" : m.openWeights ? "Open" : "Closed"}
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
                       {cat?.name ?? "?"}

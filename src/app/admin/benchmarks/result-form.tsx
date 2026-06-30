@@ -18,7 +18,20 @@ async function submit(_prevState: State, formData: FormData): Promise<State> {
   }
 }
 
-export function BenchmarkResultForm({ questionId }: { questionId: string }) {
+type ResultInitialValue = {
+  modelName: string;
+  isCorrect: boolean;
+  modelAnswer?: string | null;
+  note?: string | null;
+};
+
+export function BenchmarkResultForm({
+  questionId,
+  initialValue,
+}: {
+  questionId: string;
+  initialValue?: ResultInitialValue;
+}) {
   const [state, formAction, pending] = useActionState(submit, initialState);
 
   return (
@@ -31,8 +44,9 @@ export function BenchmarkResultForm({ questionId }: { questionId: string }) {
           maxLength={120}
           className={inputCls}
           placeholder="模型名，如 GPT-5"
+          defaultValue={initialValue?.modelName ?? ""}
         />
-        <select name="isCorrect" required className={inputCls} defaultValue="true">
+        <select name="isCorrect" required className={inputCls} defaultValue={initialValue ? String(initialValue.isCorrect) : "true"}>
           <option value="true">正确</option>
           <option value="false">错误</option>
         </select>
@@ -43,6 +57,7 @@ export function BenchmarkResultForm({ questionId }: { questionId: string }) {
         maxLength={20000}
         className={inputCls}
         placeholder="模型回答（可选）"
+        defaultValue={initialValue?.modelAnswer ?? ""}
       />
       <textarea
         name="note"
@@ -50,6 +65,7 @@ export function BenchmarkResultForm({ questionId }: { questionId: string }) {
         maxLength={2000}
         className={inputCls}
         placeholder="备注（可选）"
+        defaultValue={initialValue?.note ?? ""}
       />
       <div className="flex items-center gap-3">
         <button
@@ -57,7 +73,7 @@ export function BenchmarkResultForm({ questionId }: { questionId: string }) {
           disabled={pending}
           className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
         >
-          {pending ? "保存中…" : "添加 / 更新结果"}
+          {pending ? "保存中…" : initialValue ? "更新结果" : "添加 / 更新结果"}
         </button>
         {state.message && (
           <span className={`text-xs ${state.ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>

@@ -93,14 +93,10 @@ export default async function ModelDetailPage({
               )}
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
-              {model.vendor && <span>{model.vendor}</span>}
-              {model.licenseText && <span>开源协议：{model.licenseText}</span>}
+              {model.lab && <span>来源：{model.lab}</span>}
+              {model.openWeights !== null && <span>Weight：{formatWeight(model.openWeights)}</span>}
             </div>
-            {model.releasedAt && (
-              <div className="mt-3 text-xs text-zinc-500">
-                发布：{model.releasedAt}
-              </div>
-            )}
+            <ModelMetadata model={model} />
           </div>
 
           {homepageUrl && (
@@ -196,4 +192,58 @@ export default async function ModelDetailPage({
       <SiteFooter />
     </main>
   );
+}
+
+type DetailModel = NonNullable<Awaited<ReturnType<typeof getModelBySlug>>>;
+
+function ModelMetadata({ model }: { model: DetailModel }) {
+  const rows = [
+    { label: "Context", value: formatTokens(model.contextTokens) },
+    { label: "Output", value: formatTokens(model.outputTokens) },
+    { label: "Input", value: formatList(model.inputModalities) },
+    { label: "Output modalities", value: formatList(model.outputModalities) },
+    { label: "Reasoning", value: model.supportsReasoning ? "支持" : "—" },
+    { label: "Tool call", value: model.supportsToolCall ? "支持" : "—" },
+    { label: "Price", value: formatPrice(model.price) },
+    { label: "Release", value: model.releasedAt ?? "—" },
+  ].filter((row) => row.value !== "—");
+
+  if (rows.length === 0) return null;
+
+  return (
+    <dl className="mt-4 grid gap-2 text-xs text-zinc-500 sm:grid-cols-2 lg:grid-cols-4">
+      {rows.map((row) => (
+        <div
+          key={row.label}
+          className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+        >
+          <dt className="font-medium text-zinc-700 dark:text-zinc-300">{row.label}</dt>
+          <dd className="mt-1 break-words">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function formatWeight(openWeights: boolean): string {
+  return openWeights ? "Open weights" : "Closed weights";
+}
+
+function formatTokens(value: number | null): string {
+  return value === null ? "—" : value.toLocaleString();
+}
+
+function formatList(values: string[] | null): string {
+  return values && values.length > 0 ? values.join(", ") : "—";
+}
+
+function formatPrice(price: DetailModel["price"]): string {
+  if (!price) return "—";
+  const parts = [
+    price.input !== undefined ? `Input $${price.input}` : null,
+    price.output !== undefined ? `Output $${price.output}` : null,
+    price.cacheRead !== undefined ? `Cache read $${price.cacheRead}` : null,
+    price.cacheWrite !== undefined ? `Cache write $${price.cacheWrite}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" / ") : "—";
 }

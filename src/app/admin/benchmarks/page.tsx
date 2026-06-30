@@ -2,7 +2,6 @@ import Link from "next/link";
 import { benchmarkQuestionStatusEnum, type BenchmarkQuestionStatus } from "@/db/schema";
 import { listBenchmarkQuestionsForAdmin } from "@/lib/benchmarks";
 import { BenchmarkQuestionRowActions } from "./row-actions";
-import { BenchmarkResultForm } from "./result-form";
 
 export const dynamic = "force-dynamic";
 
@@ -52,68 +51,32 @@ export default async function AdminBenchmarksPage({
           没有匹配的题目
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
           {rows.map((row) => {
             const label = STATUS_LABELS[row.status];
             return (
-              <li key={row.id} className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
+              <li key={row.id} className="p-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                       <span className={`rounded-full px-2 py-0.5 font-medium ${label.cls}`}>{label.name}</span>
                       <span>上传者：{row.uploaderName}</span>
                       <span>提交：{formatDateTime(row.createdAt)}</span>
-                      {row.reviewedAt && <span>审核：{formatDateTime(row.reviewedAt)}</span>}
+                      <span>结果：{row.results.length}</span>
                     </div>
-                    <Block title="题目内容" content={row.question} />
-                    <Block title="参考答案" content={row.referenceAnswer} />
-                    {row.judgeNote && <Block title="判题说明" content={row.judgeNote} />}
-                    {row.rejectReason && (
-                      <div className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
-                        拒绝原因：{row.rejectReason}
-                      </div>
-                    )}
+                    <p className="line-clamp-2 whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
+                      {summarize(row.question)}
+                    </p>
                   </div>
-                  <div className="lg:w-56">
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
                     <BenchmarkQuestionRowActions id={row.id} status={row.status} />
+                    <Link
+                      href={`/admin/benchmarks/${row.id}`}
+                      className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
+                    >
+                      详情
+                    </Link>
                   </div>
-                </div>
-
-                <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                  <h2 className="text-sm font-semibold">测试结果</h2>
-                  {row.results.length === 0 ? (
-                    <p className="mt-2 text-xs text-zinc-500">还没有录入测试结果</p>
-                  ) : (
-                    <div className="mt-3 overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-800">
-                          <tr>
-                            <th className="py-2 pr-4 font-medium">模型</th>
-                            <th className="py-2 pr-4 font-medium">结果</th>
-                            <th className="py-2 pr-4 font-medium">回答</th>
-                            <th className="py-2 font-medium">备注</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {row.results.map((result) => (
-                            <tr key={result.id} className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800">
-                              <td className="py-2 pr-4 align-top font-medium">{result.modelName}</td>
-                              <td className={`py-2 pr-4 align-top ${result.isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                                {result.isCorrect ? "正确" : "错误"}
-                              </td>
-                              <td className="max-w-md whitespace-pre-wrap py-2 pr-4 align-top text-xs text-zinc-600 dark:text-zinc-400">
-                                {result.modelAnswer || "—"}
-                              </td>
-                              <td className="max-w-xs whitespace-pre-wrap py-2 align-top text-xs text-zinc-600 dark:text-zinc-400">
-                                {result.note || "—"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  <BenchmarkResultForm questionId={row.id} />
                 </div>
               </li>
             );
@@ -147,15 +110,9 @@ function FilterLink({
   );
 }
 
-function Block({ title, content }: { title: string; content: string }) {
-  return (
-    <div className="mt-3">
-      <div className="mb-1 text-xs font-medium text-zinc-500">{title}</div>
-      <div className="whitespace-pre-wrap rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-        {content}
-      </div>
-    </div>
-  );
+function summarize(value: string) {
+  const text = value.replace(/\s+/g, " ").trim();
+  return text.length > 180 ? `${text.slice(0, 180)}…` : text;
 }
 
 function formatDateTime(value: Date) {

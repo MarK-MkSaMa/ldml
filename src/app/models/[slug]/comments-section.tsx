@@ -11,7 +11,7 @@
  *
  * 暂未实现（下一步）：点赞 / 点踩 / 编辑 / 删除 / 举报
  */
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { CommentNode, CommentSort } from "@/lib/comments";
 
@@ -41,15 +41,10 @@ export function CommentsSection({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // 用户点的"乐观"排序值。路由完成后会被 props.initialSort 覆盖（通过 useEffect 清空）
+  // 用户点的"乐观"排序值。路由完成后由 isPending 回落到 props.initialSort。
   const [pendingSort, setPendingSort] = useState<CommentSort | null>(null);
 
-  // initialSort 变化（路由切完）就清掉 pendingSort
-  useEffect(() => {
-    setPendingSort(null);
-  }, [initialSort]);
-
-  const sort = pendingSort ?? initialSort;
+  const sort = isPending && pendingSort ? pendingSort : initialSort;
   const comments = initialComments;
 
   // 切排序：用 URL 参数让服务端重新查（保留 SSR 优势，URL 也可分享）
@@ -126,7 +121,7 @@ export function CommentsSection({
       ) : (
         <ul className="space-y-6">
           {comments.map((c) => (
-            <li key={c.id}>
+            <li key={`${c.id}:${c.myReaction ?? "none"}:${c.likeCount}:${c.dislikeCount}`}>
               <CommentItem
                 comment={c}
                 modelId={modelId}
@@ -185,13 +180,7 @@ function CommentItem({
   const [dislikeCount, setDislikeCount] = useState(c.dislikeCount);
   const [reacting, setReacting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  // c 的 prop 更新时同步乐观状态（refresh 后）
-  useEffect(() => {
-    setMyReaction(c.myReaction);
-    setLikeCount(c.likeCount);
-    setDislikeCount(c.dislikeCount);
-  }, [c.myReaction, c.likeCount, c.dislikeCount]);
+  const [now] = useState(() => Date.now());
 
   // 已删除评论在服务层就过滤掉了，前端不会拿到
   // 仅处理"被隐藏"的情况
@@ -201,7 +190,7 @@ function CommentItem({
 
   const isAuthor = viewer.userId === c.author.id;
   const withinEditWindow =
-    isAuthor && Date.now() - new Date(c.createdAt).getTime() < EDIT_WINDOW_MS;
+    isAuthor && now - new Date(c.createdAt).getTime() < EDIT_WINDOW_MS;
   const canDelete = isAuthor || viewer.isAdmin;
   const canReport = viewer.isLoggedIn && !isAuthor;
 

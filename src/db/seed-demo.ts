@@ -27,7 +27,6 @@ type DemoModel = {
   slug: string;
   name: string;
   vendor: string;
-  licenseText?: string;
   categorySlug: "text" | "image" | "video";
   status?: "listed" | "observing" | "draft";
   // 各维度的演示分数（slug -> 0..10 的均分）
@@ -40,7 +39,6 @@ const DEMO: DemoModel[] = [
     slug: "gpt-5",
     name: "GPT-5",
     vendor: "OpenAI",
-    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -56,7 +54,6 @@ const DEMO: DemoModel[] = [
     slug: "claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
     vendor: "Anthropic",
-    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -72,7 +69,6 @@ const DEMO: DemoModel[] = [
     slug: "gemini-2-5-pro",
     name: "Gemini 2.5 Pro",
     vendor: "Google",
-    licenseText: "Proprietary",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -90,7 +86,6 @@ const DEMO: DemoModel[] = [
     slug: "deepseek-v3-2",
     name: "DeepSeek V3.2",
     vendor: "DeepSeek",
-    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -106,7 +101,6 @@ const DEMO: DemoModel[] = [
     slug: "qwen3-coder",
     name: "Qwen3 Coder",
     vendor: "Alibaba",
-    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "listed",
     scores: {
@@ -122,7 +116,6 @@ const DEMO: DemoModel[] = [
     slug: "minimax-m2",
     name: "MiniMax M2",
     vendor: "MiniMax",
-    licenseText: "Apache 2.0",
     categorySlug: "text",
     status: "observing",
     scores: {
@@ -137,7 +130,6 @@ const DEMO: DemoModel[] = [
     slug: "midjourney-v7",
     name: "Midjourney v7",
     vendor: "Midjourney",
-    licenseText: "Proprietary",
     categorySlug: "image",
     status: "listed",
     scores: {
@@ -153,7 +145,6 @@ const DEMO: DemoModel[] = [
     slug: "flux-1-1-pro",
     name: "FLUX 1.1 [pro]",
     vendor: "Black Forest Labs",
-    licenseText: "Apache 2.0",
     categorySlug: "image",
     status: "listed",
     scores: {
@@ -169,7 +160,6 @@ const DEMO: DemoModel[] = [
     slug: "sora-2",
     name: "Sora 2",
     vendor: "OpenAI",
-    licenseText: "Proprietary",
     categorySlug: "video",
     status: "listed",
     scores: {
@@ -209,7 +199,6 @@ async function seedDemo() {
         slug: m.slug,
         name: m.name,
         vendor: m.vendor,
-        licenseText: m.licenseText ?? null,
         categoryId: cid,
         status: m.status ?? "listed",
         publishedAt: new Date(),
@@ -219,8 +208,7 @@ async function seedDemo() {
         set: {
           name: m.name,
           vendor: m.vendor,
-          licenseText: m.licenseText ?? null,
-          categoryId: cid,
+            categoryId: cid,
           status: m.status ?? "listed",
           updatedAt: new Date(),
         },

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 模型新建 / 编辑表单
+ * 模型编辑表单
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -19,10 +19,20 @@ export type ModelFormInitial = {
   name: string;
   slug: string;
   categoryId: number;
-  vendor: string;
-  licenseText: string;
+  lab: string;
   homepageUrl: string;
   releasedAt: string;
+  contextTokens: string;
+  outputTokens: string;
+  inputModalities: string;
+  outputModalities: string;
+  supportsReasoning: boolean;
+  supportsToolCall: boolean;
+  openWeights: "unknown" | "true" | "false";
+  priceInput: string;
+  priceOutput: string;
+  priceCacheRead: string;
+  priceCacheWrite: string;
   status: ModelStatus;
   pinned: boolean;
 };
@@ -31,10 +41,20 @@ const EMPTY: ModelFormInitial = {
   name: "",
   slug: "",
   categoryId: 0,
-  vendor: "",
-  licenseText: "",
+  lab: "",
   homepageUrl: "",
   releasedAt: "",
+  contextTokens: "",
+  outputTokens: "",
+  inputModalities: "",
+  outputModalities: "",
+  supportsReasoning: false,
+  supportsToolCall: false,
+  openWeights: "unknown",
+  priceInput: "",
+  priceOutput: "",
+  priceCacheRead: "",
+  priceCacheWrite: "",
   status: "draft",
   pinned: false,
 };
@@ -96,7 +116,7 @@ export function ModelForm({
           maxLength={80}
           pattern="[a-z0-9][a-z0-9-]*"
           className={inputCls}
-          placeholder="gpt-5"
+          placeholder="openai-gpt-5"
         />
       </Row>
 
@@ -116,29 +136,18 @@ export function ModelForm({
         </select>
       </Row>
 
-      <Row label="厂商">
+      <Row label="来源 lab">
         <input
-          name="vendor"
-          value={state.vendor}
-          onChange={(e) => update("vendor", e.target.value)}
-          maxLength={60}
+          name="lab"
+          value={state.lab}
+          onChange={(e) => update("lab", e.target.value)}
+          maxLength={80}
           className={inputCls}
           placeholder="OpenAI / Anthropic / Alibaba ..."
         />
       </Row>
 
-      <Row label="开源协议">
-        <input
-          name="licenseText"
-          value={state.licenseText}
-          onChange={(e) => update("licenseText", e.target.value)}
-          maxLength={80}
-          className={inputCls}
-          placeholder="Proprietary / MIT / Apache 2.0 ..."
-        />
-      </Row>
-
-      <Row label="官网">
+      <Row label="官网 / 文档">
         <input
           name="homepageUrl"
           type="url"
@@ -149,7 +158,7 @@ export function ModelForm({
         />
       </Row>
 
-      <Row label="发布日期">
+      <Row label="Release">
         <input
           name="releasedAt"
           type="date"
@@ -158,6 +167,135 @@ export function ModelForm({
           className={inputCls}
         />
       </Row>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Row label="Context tokens">
+          <input
+            name="contextTokens"
+            type="number"
+            min={0}
+            value={state.contextTokens}
+            onChange={(e) => update("contextTokens", e.target.value)}
+            className={inputCls}
+            placeholder="128000"
+          />
+        </Row>
+        <Row label="Output tokens">
+          <input
+            name="outputTokens"
+            type="number"
+            min={0}
+            value={state.outputTokens}
+            onChange={(e) => update("outputTokens", e.target.value)}
+            className={inputCls}
+            placeholder="16384"
+          />
+        </Row>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Row label="Input modalities" hint="逗号分隔，例如 text,image">
+          <input
+            name="inputModalities"
+            value={state.inputModalities}
+            onChange={(e) => update("inputModalities", e.target.value)}
+            className={inputCls}
+            placeholder="text,image"
+          />
+        </Row>
+        <Row label="Output modalities" hint="逗号分隔，例如 text">
+          <input
+            name="outputModalities"
+            value={state.outputModalities}
+            onChange={(e) => update("outputModalities", e.target.value)}
+            className={inputCls}
+            placeholder="text"
+          />
+        </Row>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="supportsReasoning"
+            checked={state.supportsReasoning}
+            onChange={(e) => update("supportsReasoning", e.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+          />
+          支持 reasoning
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="supportsToolCall"
+            checked={state.supportsToolCall}
+            onChange={(e) => update("supportsToolCall", e.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+          />
+          支持 tool call
+        </label>
+      </div>
+
+      <Row label="Weight">
+        <select
+          name="openWeights"
+          value={state.openWeights}
+          onChange={(e) => update("openWeights", e.target.value as ModelFormInitial["openWeights"])}
+          className={inputCls}
+        >
+          <option value="unknown">未知</option>
+          <option value="true">Open weights</option>
+          <option value="false">Closed weights</option>
+        </select>
+      </Row>
+
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Row label="Price input">
+          <input
+            name="priceInput"
+            type="number"
+            min={0}
+            step="0.000001"
+            value={state.priceInput}
+            onChange={(e) => update("priceInput", e.target.value)}
+            className={inputCls}
+          />
+        </Row>
+        <Row label="Price output">
+          <input
+            name="priceOutput"
+            type="number"
+            min={0}
+            step="0.000001"
+            value={state.priceOutput}
+            onChange={(e) => update("priceOutput", e.target.value)}
+            className={inputCls}
+          />
+        </Row>
+        <Row label="Cache read">
+          <input
+            name="priceCacheRead"
+            type="number"
+            min={0}
+            step="0.000001"
+            value={state.priceCacheRead}
+            onChange={(e) => update("priceCacheRead", e.target.value)}
+            className={inputCls}
+          />
+        </Row>
+        <Row label="Cache write">
+          <input
+            name="priceCacheWrite"
+            type="number"
+            min={0}
+            step="0.000001"
+            value={state.priceCacheWrite}
+            onChange={(e) => update("priceCacheWrite", e.target.value)}
+            className={inputCls}
+          />
+        </Row>
+      </div>
 
       <Row label="状态" required>
         <select

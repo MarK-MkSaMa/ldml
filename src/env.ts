@@ -1,3 +1,4 @@
+import * as dotenv from "dotenv";
 import { z } from "zod";
 
 /**
@@ -6,8 +7,6 @@ import { z } from "zod";
  * 因此在所有场景下都安全。
  */
 if (typeof window === "undefined" && !process.env.__ENV_LOADED__) {
-    // 动态 require 避免在浏览器侧打包 dotenv
-  const dotenv = require("dotenv") as typeof import("dotenv");
   dotenv.config({ path: ".env.local" });
   dotenv.config({ path: ".env" });
   process.env.__ENV_LOADED__ = "1";
@@ -46,6 +45,14 @@ const envSchema = z.object({
         .map((s) => s.trim())
         .filter(Boolean),
     ),
+
+  // models.dev 自动同步
+  MODELS_DEV_SOURCE_URL: z.string().url().default("https://models.dev/api.json"),
+  MODELS_SYNC_SECRET: z.string().default(""),
+  MODELS_SYNC_AUTO_PUBLISH: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true" || val === "1"),
 });
 
 export const env = envSchema.parse(process.env);
