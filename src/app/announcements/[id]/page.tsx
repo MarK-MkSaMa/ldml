@@ -21,9 +21,9 @@ export default async function AnnouncementDetailPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader maxWidth="max-w-3xl" />
+      <SiteHeader maxWidth="max-w-[96rem]" />
 
-      <article className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
+      <article className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
         <nav className="mb-4 text-sm text-zinc-500">
           <Link
             href="/announcements"
@@ -33,21 +33,23 @@ export default async function AnnouncementDetailPage({
           </Link>
         </nav>
 
-        <h1 className="text-3xl font-bold tracking-tight">
-          {a.isPinned && <span className="mr-2">📌</span>}
-          {a.title}
-        </h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          {a.publishedAt
-            ? `发布于 ${a.publishedAt.toLocaleString("zh-CN", { hour12: false })}`
-            : ""}
-        </p>
+        <div className="max-w-4xl">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {a.isPinned && <span className="mr-2">📌</span>}
+            {a.title}
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            {a.publishedAt
+              ? `发布于 ${a.publishedAt.toLocaleString("zh-CN", { hour12: false })}`
+              : ""}
+          </p>
 
-        <div
-          className="markdown-body mt-8"
-          // 内容已经在写入时 sanitize 过，可以安全渲染
-          dangerouslySetInnerHTML={{ __html: a.contentHtml }}
-        />
+          <div
+            className="markdown-body mt-8"
+            // 内容已经在写入时 sanitize 过，可以安全渲染
+            dangerouslySetInnerHTML={{ __html: a.contentHtml }}
+          />
+        </div>
       </article>
 
       <SiteFooter />

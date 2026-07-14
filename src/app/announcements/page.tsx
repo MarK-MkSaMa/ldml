@@ -13,9 +13,9 @@ export default async function AnnouncementsPage() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader maxWidth="max-w-3xl" />
+      <SiteHeader maxWidth="max-w-[96rem]" />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
+      <div className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
         <nav className="mb-4 text-sm text-zinc-500">
           <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100">
             ← 返回首页
