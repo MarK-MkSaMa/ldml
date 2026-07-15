@@ -10,7 +10,8 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { getCurrentUserFresh } from "@/lib/current-user";
-import { getRanking } from "@/lib/rankings";
+import { getRanking, getRankingForViewer } from "@/lib/rankings";
+import { getUserRatedModelIds } from "@/lib/votes";
 import { RankingTable } from "./[category]/ranking-table";
 import { ObservingSection } from "./[category]/observing-section";
 import { RankingsShell } from "./[category]/rankings-shell";
@@ -26,16 +27,21 @@ export default async function RankingPage({
   params: Promise<{ license: string }>;
 }) {
   const { license: category } = await params;
-  const [data, categoryTabs] = await Promise.all([
+  const [data, categoryTabs, user] = await Promise.all([
     getRanking(category),
     db
       .select({ slug: categories.slug, name: categories.name })
       .from(categories)
       .orderBy(asc(categories.order)),
+    getCurrentUserFresh(),
   ]);
   if (!data) notFound();
 
-  const user = await getCurrentUserFresh();
+  const modelIds = [...data.listed, ...data.observing].map((model) => model.id);
+  const ratedModelIds = user
+    ? await getUserRatedModelIds(user.id, modelIds)
+    : new Set<string>();
+  const viewerData = await getRankingForViewer(data, ratedModelIds);
   let hintText: string;
   if (!user) {
     hintText = "💡 点击任意一行查看模型详情并评分 · 需先登录 Linux DO";
@@ -57,19 +63,19 @@ export default async function RankingPage({
           hintText={hintText}
           categoryTabs={categoryTabs}
         >
-          {data.observing.length > 0 && (
+          {viewerData.observing.length > 0 && (
             <ObservingSection
-              dimensions={data.dimensions}
-              models={data.observing}
+              dimensions={viewerData.dimensions}
+              models={viewerData.observing}
             />
           )}
 
-          {data.listed.length === 0 ? (
+          {viewerData.listed.length === 0 ? (
             <p className="py-12 text-center text-zinc-500">暂无模型上榜</p>
           ) : (
             <RankingTable
-              dimensions={data.dimensions}
-              models={data.listed}
+              dimensions={viewerData.dimensions}
+              models={viewerData.listed}
               showOverall={true}
               storageKey={category}
             />

@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUserFresh } from "@/lib/current-user";
-import { getModelBySlug } from "@/lib/models";
+import { getModelBySlug, getModelDimensionStats } from "@/lib/models";
 import { getModelVoteInsights, getUserVotesForModel } from "@/lib/votes";
 import { listCommentsForModel, type CommentSort } from "@/lib/comments";
 import { isSafeExternalUrl } from "@/lib/safe-url";
@@ -30,10 +30,22 @@ export default async function ModelDetailPage({
 
   const homepageUrl = isSafeExternalUrl(model.homepageUrl) ? model.homepageUrl : null;
   const user = await getCurrentUserFresh();
-  const [myVotes, voteInsights] = await Promise.all([
-    user ? getUserVotesForModel(user.id, model.id) : Promise.resolve({}),
-    getModelVoteInsights(model.id),
-  ]);
+  const myVotes = user ? await getUserVotesForModel(user.id, model.id) : {};
+  const ratingUnlocked = Object.keys(myVotes).length > 0;
+  const [dimensionStats, voteInsights] = ratingUnlocked
+    ? await Promise.all([
+        getModelDimensionStats(model.id),
+        getModelVoteInsights(model.id),
+      ])
+    : [null, null];
+  const ratingDimensions = model.dimensions.map((dimension) => {
+    const stats = dimensionStats?.[dimension.id];
+    return {
+      ...dimension,
+      avg: stats?.avg ?? null,
+      voteCount: dimensionStats ? (stats?.voteCount ?? 0) : null,
+    };
+  });
 
   const canVote = !!user && user.trustLevel >= 1;
   let notVotableReason: string | undefined;
@@ -56,15 +68,6 @@ export default async function ModelDetailPage({
   } else if (user.trustLevel < 1) {
     notCommentableReason = `你的 Linux DO 信任等级为 ${user.trustLevel}，需要达到 1 级才能评论`;
   }
-
-  // 综合分：与排行榜一致，使用各维度 avg_score 的简单平均
-  const avgScores = model.dimensions
-    .map((d) => d.avg)
-    .filter((v): v is number => v !== null);
-  const overall =
-    avgScores.length > 0
-      ? avgScores.reduce((a, b) => a + b, 0) / avgScores.length
-      : null;
 
   return (
     <main className="flex flex-1 flex-col">
@@ -113,38 +116,48 @@ export default async function ModelDetailPage({
 
         {/* 当前评分 */}
         <section className="mb-10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">当前评分</h2>
-            {overall !== null && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">当前评分</h2>
+              <p className="text-xs text-zinc-500">汇总 {model.totalVotes.toLocaleString()} 条有效评分记录</p>
+            </div>
+            {model.officialOverall !== null && (
               <span className="text-sm text-zinc-500">
-                综合 <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{overall.toFixed(1)}</span>
+                官方综合 <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{model.officialOverall.toFixed(1)}</span>
               </span>
             )}
           </div>
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full min-w-[28rem] text-sm">
-              <tbody>
-                {model.dimensions.map((d, i) => (
-                  <tr
-                    key={d.id}
-                    className={
-                      i % 2 === 0
-                        ? "bg-zinc-50/50 dark:bg-zinc-900/30"
-                        : ""
-                    }
-                  >
-                    <td className="px-4 py-2">{d.name}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      {d.avg !== null ? d.avg.toFixed(1) : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-right text-xs text-zinc-500 tabular-nums">
-                      {d.voteCount.toLocaleString()} 票
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {ratingUnlocked ? (
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+              <table className="w-full min-w-[28rem] text-sm">
+                <tbody>
+                  {ratingDimensions.map((d, i) => (
+                    <tr
+                      key={d.id}
+                      className={
+                        i % 2 === 0
+                          ? "bg-zinc-50/50 dark:bg-zinc-900/30"
+                          : ""
+                      }
+                    >
+                      <td className="px-4 py-2">{d.name}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        {d.avg !== null ? d.avg.toFixed(1) : "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right text-xs text-zinc-500 tabular-nums">
+                        {(d.voteCount ?? 0).toLocaleString()} 票
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-zinc-300 px-5 py-8 text-center dark:border-zinc-700">
+              <div className="text-sm font-medium">维度评分在评分后可见</div>
+              <p className="mt-1 text-xs text-zinc-500">对该模型任一维度提交评分后，即可查看维度均分与票数。</p>
+            </div>
+          )}
         </section>
 
         {/* 投票 */}
@@ -157,16 +170,11 @@ export default async function ModelDetailPage({
           </div>
           <RatingPanel
             modelId={model.id}
-            dimensions={model.dimensions.map((d) => ({
-              id: d.id,
-              slug: d.slug,
-              name: d.name,
-              description: d.description,
-              avg: d.avg,
-              voteCount: d.voteCount,
-            }))}
+            dimensions={ratingDimensions}
             initialMyVotes={myVotes}
+            totalVotes={model.totalVotes}
             voteInsights={voteInsights}
+            detailsUnlocked={ratingUnlocked}
             canVote={canVote}
             notVotableReason={notVotableReason}
           />

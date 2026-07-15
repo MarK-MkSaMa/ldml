@@ -12,7 +12,7 @@ import {
   models,
   modelStats,
 } from "@/db/schema";
-import { eq, asc, inArray } from "drizzle-orm";
+import { and, eq, asc, inArray, sql } from "drizzle-orm";
 import { recomputeStatsIfStale } from "./stats-refresh";
 
 export type DimensionInfo = {
@@ -32,9 +32,11 @@ export type ModelRow = {
   pinned: boolean;
   releasedAt: string | null;
   publishedAt: Date | null;
-  // dimensionId -> { avg, weighted, count }
+  // 当前查看者是否已对该模型留下至少一条有效评分
+  ratingUnlocked: boolean;
+  // dimensionId -> { avg, weighted, count }；未解锁时服务端返回空对象
   scores: Record<number, { avg: number | null; weighted: number | null; count: number }>;
-  // 综合分（各维度 avg 的简单平均，null 不计入）
+  // 官方综合分（各维度 avg 的简单平均，null 不计入）
   overall: number | null;
   // 总票数（最大维度票数，作为粗略指标）
   totalVotes: number;
@@ -70,40 +72,34 @@ async function getRankingUncached(
       .where(eq(models.categoryId, cat.id)),
   ]);
 
-  // 阶段 3：查相关 model_stats（用 IN 过滤，DB 端就筛好，不再拉全表）
+  // 阶段 3：只查询公开聚合，逐维度统计留到确认查看者已评分后再加载
   const modelIds = modelRows.map((m) => m.id);
-  const stats =
+  const aggregateRows =
     modelIds.length === 0
       ? []
       : await db
-          .select()
+          .select({
+            modelId: modelStats.modelId,
+            overall: sql<string | null>`avg(${modelStats.avgScore})`,
+            totalVotes: sql<number>`coalesce(max(${modelStats.voteCount}), 0)::int`,
+          })
           .from(modelStats)
-          .where(inArray(modelStats.modelId, modelIds));
-
-  const statsByModel = new Map<string, typeof stats>();
-  for (const s of stats) {
-    const arr = statsByModel.get(s.modelId) ?? [];
-    arr.push(s);
-    statsByModel.set(s.modelId, arr);
-  }
+          .innerJoin(models, eq(models.id, modelStats.modelId))
+          .innerJoin(dimensions, eq(dimensions.id, modelStats.dimensionId))
+          .where(
+            and(
+              inArray(modelStats.modelId, modelIds),
+              eq(models.categoryId, dimensions.categoryId),
+            ),
+          )
+          .groupBy(modelStats.modelId);
+  const aggregatesByModel = new Map(
+    aggregateRows.map((row) => [row.modelId, row]),
+  );
 
   // 5. 组合
   const enrich = (m: (typeof modelRows)[number]): ModelRow => {
-    const myStats = statsByModel.get(m.id) ?? [];
-    const scores: ModelRow["scores"] = {};
-    let avgSum = 0;
-    let avgCount = 0;
-    let totalVotes = 0;
-    for (const s of myStats) {
-      const avg = s.avgScore !== null ? Number(s.avgScore) : null;
-      const weighted = s.weightedScore !== null ? Number(s.weightedScore) : null;
-      scores[s.dimensionId] = { avg, weighted, count: s.voteCount };
-      if (avg !== null) {
-        avgSum += avg;
-        avgCount++;
-      }
-      if (s.voteCount > totalVotes) totalVotes = s.voteCount;
-    }
+    const aggregate = aggregatesByModel.get(m.id);
     return {
       id: m.id,
       slug: m.slug,
@@ -114,9 +110,13 @@ async function getRankingUncached(
       pinned: m.pinned,
       releasedAt: m.releasedAt,
       publishedAt: m.publishedAt,
-      scores,
-      overall: avgCount > 0 ? avgSum / avgCount : null,
-      totalVotes,
+      ratingUnlocked: false,
+      scores: {},
+      overall:
+        aggregate?.overall !== null && aggregate?.overall !== undefined
+          ? Number(aggregate.overall)
+          : null,
+      totalVotes: Number(aggregate?.totalVotes ?? 0),
     };
   };
 
@@ -165,6 +165,65 @@ export const getRanking = unstable_cache(
   ["rankings"],
   { revalidate: 60, tags: ["rankings"] },
 );
+
+/**
+ * 按当前查看者权限克隆排行榜数据，并在服务端移除未解锁模型的维度明细。
+ */
+export async function getRankingForViewer(
+  data: RankingData,
+  ratedModelIds: ReadonlySet<string>,
+): Promise<RankingData> {
+  const rows = [...data.listed, ...data.observing];
+  const unlockedModelIds = rows
+    .map((row) => row.id)
+    .filter((modelId) => ratedModelIds.has(modelId));
+  const statRows = unlockedModelIds.length === 0
+    ? []
+    : await db
+        .select({
+          modelId: modelStats.modelId,
+          dimensionId: modelStats.dimensionId,
+          avgScore: modelStats.avgScore,
+          weightedScore: modelStats.weightedScore,
+          voteCount: modelStats.voteCount,
+        })
+        .from(modelStats)
+        .innerJoin(models, eq(models.id, modelStats.modelId))
+        .innerJoin(dimensions, eq(dimensions.id, modelStats.dimensionId))
+        .where(
+          and(
+            inArray(modelStats.modelId, unlockedModelIds),
+            eq(models.categoryId, dimensions.categoryId),
+          ),
+        );
+  const scoresByModel = new Map<string, ModelRow["scores"]>();
+  for (const stat of statRows) {
+    const scores = scoresByModel.get(stat.modelId) ?? {};
+    scores[stat.dimensionId] = {
+      avg: stat.avgScore !== null ? Number(stat.avgScore) : null,
+      weighted: stat.weightedScore !== null ? Number(stat.weightedScore) : null,
+      count: stat.voteCount,
+    };
+    scoresByModel.set(stat.modelId, scores);
+  }
+
+  const prepareRows = (modelRows: ModelRow[]) => modelRows.map((row) => {
+    const ratingUnlocked = ratedModelIds.has(row.id);
+    return {
+      ...row,
+      ratingUnlocked,
+      scores: ratingUnlocked ? (scoresByModel.get(row.id) ?? {}) : {},
+    };
+  });
+
+  return {
+    ...data,
+    category: { ...data.category },
+    dimensions: data.dimensions.map((dimension) => ({ ...dimension })),
+    listed: prepareRows(data.listed),
+    observing: prepareRows(data.observing),
+  };
+}
 
 /**
  * 用于生成静态路径 —— 列出所有 category

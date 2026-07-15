@@ -32,7 +32,8 @@ export function ObservingSection({
           <RankingTable
             dimensions={dimensions}
             models={models}
-            showOverall={false}
+            showOverall={true}
+            enablePreferences={false}
           />
         </div>
       )}

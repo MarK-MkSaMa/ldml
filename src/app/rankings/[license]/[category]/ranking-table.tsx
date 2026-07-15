@@ -43,12 +43,14 @@ export function RankingTable({
   models,
   showOverall,
   storageKey,
+  enablePreferences = showOverall,
 }: {
   dimensions: DimensionInfo[];
   models: ModelRow[];
   showOverall: boolean;
   /** 用于 localStorage 命名空间，例如 "text" / "image" / "video" */
   storageKey?: string;
+  enablePreferences?: boolean;
 }) {
   const router = useRouter();
 
@@ -91,16 +93,21 @@ export function RankingTable({
     }
   }
 
+  const preferencesAvailable = enablePreferences && dimensions.length > 0;
+
   // 是否使用了非默认权重
   const hasCustomWeights = useMemo(
-    () => dimensions.some((d) => weights[d.id] !== undefined && weights[d.id] !== 1),
-    [weights, dimensions],
+    () => preferencesAvailable && dimensions.some((d) => weights[d.id] !== undefined && weights[d.id] !== 1),
+    [weights, dimensions, preferencesAvailable],
   );
+  const hasLockedModels = models.some((model) => !model.ratingUnlocked);
 
-  // 用权重按 avg_score 重算每个模型的综合分（覆盖 m.overall）
+  // 只为已解锁模型按 avg_score 重算综合分；未解锁模型保留官方综合分
   const weightedModels = useMemo<ModelRow[]>(() => {
     if (!hasCustomWeights) return models;
     return models.map((m) => {
+      if (!m.ratingUnlocked) return m;
+
       let weightedSum = 0;
       let totalWeight = 0;
       for (const d of dimensions) {
@@ -169,7 +176,7 @@ export function RankingTable({
   // 给移动端的排序选项列表（不含 name，因为按名字排在卡片视图意义不大）
   const sortOptions: { key: SortKey; label: string }[] = [
     ...(showOverall ? [{ key: "overall" as SortKey, label: "综合分" }] : []),
-    { key: "votes", label: "票数" },
+    { key: "votes", label: "最高维度票数" },
     ...dimensions.map((d) => ({
       key: `dim:${d.id}` as SortKey,
       label: d.name,
@@ -178,12 +185,13 @@ export function RankingTable({
 
   return (
     <>
-      {/* 偏好工具条：仅在显示综合分（正式榜）时出现 */}
-      {showOverall && (
+      {/* 偏好工具条：仅在允许自定义权重时出现 */}
+      {preferencesAvailable && (
         <div className="mb-3 flex items-center justify-end gap-3 text-xs">
           {hasCustomWeights && (
             <span className="text-zinc-500">
               已应用个人偏好
+              {hasLockedModels && "；未评分模型保持官方综合分"}
               <button
                 type="button"
                 onClick={resetWeights}
@@ -208,7 +216,7 @@ export function RankingTable({
       )}
 
       {/* 偏好面板 */}
-      {showOverall && prefsOpen && (
+      {preferencesAvailable && prefsOpen && (
         <PrefsPanel
           dimensions={dimensions}
           weights={weights}
@@ -234,6 +242,7 @@ export function RankingTable({
               model={m}
               dimensions={dimensions}
               showOverall={showOverall}
+              customOverall={hasCustomWeights && m.ratingUnlocked}
               onOpen={() => router.push(`/models/${m.slug}`)}
               onPrefetch={() => router.prefetch(`/models/${m.slug}`)}
             />
@@ -287,8 +296,9 @@ export function RankingTable({
               sort={sort}
               myKey="votes"
               align="right"
+              title="各维度中最高的有效评分数"
             >
-              票数
+              最高票数
             </Th>
           </tr>
         </thead>
@@ -321,16 +331,29 @@ export function RankingTable({
                   </div>
                 )}
               </td>
-              {dimensions.map((d) => {
-                const s = m.scores[d.id];
-                return (
-                  <td key={d.id} className="py-3 pr-2 pl-1 text-right tabular-nums">
-                    {s?.avg !== null && s?.avg !== undefined ? s.avg.toFixed(1) : "—"}
-                  </td>
-                );
-              })}
+              {dimensions.length > 0 && (m.ratingUnlocked ? (
+                dimensions.map((d) => {
+                  const s = m.scores[d.id];
+                  return (
+                    <td key={d.id} className="py-3 pr-2 pl-1 text-right tabular-nums">
+                      {s?.avg !== null && s?.avg !== undefined ? s.avg.toFixed(1) : "—"}
+                    </td>
+                  );
+                })
+              ) : (
+                <td
+                  colSpan={dimensions.length}
+                  className="py-3 px-2 text-center text-xs text-zinc-400"
+                  title="对该模型评分后可见"
+                >
+                  维度评分后可见
+                </td>
+              ))}
               {showOverall && (
-                <td className="py-3 pr-2 pl-1 text-right font-semibold tabular-nums">
+                <td
+                  className="py-3 pr-2 pl-1 text-right font-semibold tabular-nums"
+                  title={hasCustomWeights && m.ratingUnlocked ? "按你的维度权重重算" : "官方综合分"}
+                >
                   {m.overall !== null ? m.overall.toFixed(1) : "—"}
                 </td>
               )}
@@ -402,12 +425,14 @@ function MobileCard({
   model: m,
   dimensions,
   showOverall,
+  customOverall,
   onOpen,
   onPrefetch,
 }: {
   model: ModelRow;
   dimensions: DimensionInfo[];
   showOverall: boolean;
+  customOverall: boolean;
   onOpen: () => void;
   onPrefetch: () => void;
 }) {
@@ -444,40 +469,46 @@ function MobileCard({
             <div className="text-2xl font-bold tabular-nums">
               {m.overall.toFixed(1)}
             </div>
-            <div className="text-[10px] uppercase text-zinc-500">综合</div>
+            <div className="text-[10px] text-zinc-500">{customOverall ? "偏好综合" : "官方综合"}</div>
           </div>
         )}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
-        {dimensions.map((d) => {
-          const s = m.scores[d.id];
-          const avg = s?.avg ?? null;
-          // 进度条宽度：分数 1-10 映射到 0-100%
-          const pct = avg === null ? 0 : Math.max(0, Math.min(100, (avg / 10) * 100));
-          return (
-            <div key={d.id} className="text-xs">
-              <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                <span className="truncate" title={d.description ?? undefined}>
-                  {d.name}
-                </span>
-                <span className="ml-2 shrink-0 tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {avg !== null ? avg.toFixed(1) : "—"}
-                </span>
+      {dimensions.length > 0 && (m.ratingUnlocked ? (
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+          {dimensions.map((d) => {
+            const s = m.scores[d.id];
+            const avg = s?.avg ?? null;
+            // 进度条宽度：分数 1-10 映射到 0-100%
+            const pct = avg === null ? 0 : Math.max(0, Math.min(100, (avg / 10) * 100));
+            return (
+              <div key={d.id} className="text-xs">
+                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                  <span className="truncate" title={d.description ?? undefined}>
+                    {d.name}
+                  </span>
+                  <span className="ml-2 shrink-0 tabular-nums text-zinc-900 dark:text-zinc-100">
+                    {avg !== null ? avg.toFixed(1) : "—"}
+                  </span>
+                </div>
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <div
+                    className="h-full bg-zinc-900 dark:bg-zinc-100"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </div>
-              <div className="mt-1 h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <div
-                  className="h-full bg-zinc-900 dark:bg-zinc-100"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-md border border-dashed border-zinc-300 px-3 py-2 text-center text-xs text-zinc-500 dark:border-zinc-700">
+          维度评分在对该模型评分后可见
+        </div>
+      ))}
 
       <div className="mt-3 text-right text-xs text-zinc-500 tabular-nums">
-        {m.totalVotes.toLocaleString()} 票
+        最高维度 {m.totalVotes.toLocaleString()} 票
       </div>
     </li>
   );

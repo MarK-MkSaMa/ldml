@@ -16,7 +16,7 @@ export type RatingDimension = {
   name: string;
   description: string | null;
   avg: number | null;
-  voteCount: number;
+  voteCount: number | null;
 };
 
 /**
@@ -44,14 +44,18 @@ export function RatingPanel({
   modelId,
   dimensions,
   initialMyVotes,
+  totalVotes,
   voteInsights,
+  detailsUnlocked,
   canVote,
   notVotableReason,
 }: {
   modelId: string;
   dimensions: RatingDimension[];
   initialMyVotes: Record<number, number>;
-  voteInsights: ModelVoteInsights;
+  totalVotes: number;
+  voteInsights: ModelVoteInsights | null;
+  detailsUnlocked: boolean;
   canVote: boolean;
   notVotableReason?: string;
 }) {
@@ -65,6 +69,7 @@ export function RatingPanel({
 
   const votedCount = dimensions.filter((d) => myVotes[d.id] !== undefined).length;
   const hasVotes = votedCount > 0;
+  const detailsAvailable = hasVotes && detailsUnlocked && voteInsights !== null;
 
   async function submit(dimensionId: number, score: number) {
     if (!canVote) return;
@@ -140,11 +145,15 @@ export function RatingPanel({
                 {hasVotes ? `已评分 ${votedCount} / ${dimensions.length} 项` : "尚未评分"}
               </span>
               <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-                社区 {voteInsights.voterCount.toLocaleString()} 人 / {voteInsights.totalVotes.toLocaleString()} 票
+                {detailsAvailable
+                  ? `社区 ${voteInsights!.voterCount.toLocaleString()} 人 / ${voteInsights!.totalVotes.toLocaleString()} 条评分`
+                  : `社区汇总 ${totalVotes.toLocaleString()} 条评分记录`}
               </span>
             </div>
             <p className="mt-1 text-sm text-zinc-500">
-              页面默认收起打分按钮，点击后在弹窗中为熟悉的维度评分，也可以查看大家怎么打分。
+              {detailsAvailable
+                ? "可修改评分，并查看社区均分、分布和最近评分。"
+                : "对任一维度评分后，可查看社区均分、分布和最近评分。"}
             </p>
           </div>
 
@@ -158,10 +167,11 @@ export function RatingPanel({
             </button>
             <button
               type="button"
+              disabled={!detailsAvailable}
               onClick={() => setInsightsOpen(true)}
-              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
+              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
             >
-              查看大家的评分
+              {detailsAvailable ? "查看大家的评分" : "评分后可见"}
             </button>
           </div>
         </div>
@@ -179,20 +189,23 @@ export function RatingPanel({
           pendingDim={pendingDim}
           error={error}
           canVote={canVote}
+          detailsUnlocked={detailsAvailable}
           notVotableReason={notVotableReason}
           onSubmit={submit}
           onWithdraw={withdraw}
         />
       </Dialog>
 
-      <Dialog
-        title="大家的评分"
-        description="展示当前有效评分的分数分布和最近评分，不包含撤回记录。"
-        open={insightsOpen}
-        onClose={() => setInsightsOpen(false)}
-      >
-        <VoteInsights dimensions={dimensions} insights={voteInsights} />
-      </Dialog>
+      {detailsAvailable && voteInsights && (
+        <Dialog
+          title="大家的评分"
+          description="展示当前有效评分的分数分布和最近评分，不包含撤回记录。"
+          open={insightsOpen}
+          onClose={() => setInsightsOpen(false)}
+        >
+          <VoteInsights dimensions={dimensions} insights={voteInsights} />
+        </Dialog>
+      )}
     </>
   );
 }
@@ -203,6 +216,7 @@ function RatingForm({
   pendingDim,
   error,
   canVote,
+  detailsUnlocked,
   notVotableReason,
   onSubmit,
   onWithdraw,
@@ -212,6 +226,7 @@ function RatingForm({
   pendingDim: number | null;
   error: string | null;
   canVote: boolean;
+  detailsUnlocked: boolean;
   notVotableReason?: string;
   onSubmit: (dimensionId: number, score: number) => void;
   onWithdraw: (dimensionId: number) => void;
@@ -251,7 +266,9 @@ function RatingForm({
                 )}
               </div>
               <div className="text-xs text-zinc-500">
-                社区均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {d.voteCount.toLocaleString()} 票
+                {detailsUnlocked
+                  ? `社区均分 ${d.avg !== null ? d.avg.toFixed(1) : "—"} · ${(d.voteCount ?? 0).toLocaleString()} 票`
+                  : "社区均分 · 评分后可见"}
               </div>
             </div>
             <div
@@ -335,7 +352,7 @@ function VoteInsights({
                   <div>
                     <div className="text-sm font-medium">{d.name}</div>
                     <div className="text-xs text-zinc-500">
-                      均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {d.voteCount.toLocaleString()} 票
+                      均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {(d.voteCount ?? 0).toLocaleString()} 票
                     </div>
                   </div>
                 </div>

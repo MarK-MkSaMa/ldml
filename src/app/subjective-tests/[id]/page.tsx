@@ -77,8 +77,17 @@ export default async function SubjectiveTestDetailPage({ params }: { params: Pro
 
           <aside className="h-fit rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="text-lg font-semibold">当前活动 Elo 排名</h2>
-            {activity.ranking.length === 0 ? (
-              <p className="mt-4 rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">暂无模型输出</p>
+            {!activity.rankingUnlocked ? (
+              <div className="mt-4 rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center dark:border-zinc-700">
+                <div className="text-sm font-medium">完整排名提交后可见</div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {user
+                    ? "请为当前全部模型输出提交完整排序；活动新增输出后需要重新提交。"
+                    : "登录并为当前全部模型输出提交完整排序后，即可查看排名。"}
+                </p>
+              </div>
+            ) : activity.ranking.length === 0 ? (
+              <p className="mt-4 rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">暂无排名数据</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-sm">

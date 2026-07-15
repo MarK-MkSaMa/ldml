@@ -7,8 +7,9 @@ import {
   categories,
   dimensions,
   modelStats,
+  votes,
 } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 export type ModelDetail = {
   id: string;
@@ -32,15 +33,20 @@ export type ModelDetail = {
   } | null;
   status: "draft" | "observing" | "listed" | "archived";
   category: { slug: string; name: string };
+  officialOverall: number | null;
+  totalVotes: number;
   dimensions: {
     id: number;
     slug: string;
     name: string;
     description: string | null;
-    avg: number | null;
-    weighted: number | null;
-    voteCount: number;
   }[];
+};
+
+export type ModelDimensionStat = {
+  avg: number | null;
+  weighted: number | null;
+  voteCount: number;
 };
 
 export async function getModelBySlug(slug: string): Promise<ModelDetail | null> {
@@ -74,18 +80,35 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     .where(eq(categories.id, m.categoryId));
   if (!cat) return null;
 
-  const dims = await db
-    .select()
-    .from(dimensions)
-    .where(eq(dimensions.categoryId, cat.id))
-    .orderBy(asc(dimensions.order));
-
-  // 一并查 model_stats
-  const stats = await db
-    .select()
-    .from(modelStats)
-    .where(eq(modelStats.modelId, m.id));
-  const statsByDim = new Map(stats.map((s) => [s.dimensionId, s]));
+  const [dims, overallRows, summaryRows] = await Promise.all([
+    db
+      .select()
+      .from(dimensions)
+      .where(eq(dimensions.categoryId, cat.id))
+      .orderBy(asc(dimensions.order)),
+    db
+      .select({
+        overall: sql<string | null>`avg(${modelStats.avgScore})`,
+      })
+      .from(modelStats)
+      .innerJoin(dimensions, eq(dimensions.id, modelStats.dimensionId))
+      .where(
+        and(
+          eq(modelStats.modelId, m.id),
+          eq(dimensions.categoryId, m.categoryId),
+        ),
+      ),
+    db
+      .select({ totalVotes: sql<number>`count(*)::int` })
+      .from(votes)
+      .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+      .where(
+        and(
+          eq(votes.modelId, m.id),
+          eq(dimensions.categoryId, m.categoryId),
+        ),
+      ),
+  ]);
 
   return {
     id: m.id,
@@ -104,20 +127,51 @@ export async function getModelBySlug(slug: string): Promise<ModelDetail | null> 
     price: m.price,
     status: m.status,
     category: { slug: cat.slug, name: cat.name },
-    dimensions: dims.map((d) => {
-      const s = statsByDim.get(d.id);
-      return {
-        id: d.id,
-        slug: d.slug,
-        name: d.name,
-        description: d.description,
-        avg: s?.avgScore !== undefined && s?.avgScore !== null ? Number(s.avgScore) : null,
-        weighted:
-          s?.weightedScore !== undefined && s?.weightedScore !== null
-            ? Number(s.weightedScore)
-            : null,
-        voteCount: s?.voteCount ?? 0,
-      };
-    }),
+    officialOverall:
+      overallRows[0]?.overall !== null && overallRows[0]?.overall !== undefined
+        ? Number(overallRows[0].overall)
+        : null,
+    totalVotes: Number(summaryRows[0]?.totalVotes ?? 0),
+    dimensions: dims.map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      name: d.name,
+      description: d.description,
+    })),
   };
+}
+
+/**
+ * 仅供已解锁查看者查询逐维度社区统计。
+ */
+export async function getModelDimensionStats(
+  modelId: string,
+): Promise<Record<number, ModelDimensionStat>> {
+  const rows = await db
+    .select({
+      dimensionId: modelStats.dimensionId,
+      avgScore: modelStats.avgScore,
+      weightedScore: modelStats.weightedScore,
+      voteCount: modelStats.voteCount,
+    })
+    .from(modelStats)
+    .innerJoin(models, eq(models.id, modelStats.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, modelStats.dimensionId))
+    .where(
+      and(
+        eq(modelStats.modelId, modelId),
+        eq(models.categoryId, dimensions.categoryId),
+      ),
+    );
+
+  return Object.fromEntries(
+    rows.map((row) => [
+      row.dimensionId,
+      {
+        avg: row.avgScore !== null ? Number(row.avgScore) : null,
+        weighted: row.weightedScore !== null ? Number(row.weightedScore) : null,
+        voteCount: row.voteCount,
+      },
+    ]),
+  );
 }

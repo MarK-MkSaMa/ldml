@@ -255,6 +255,23 @@ export async function getSubjectiveTestActivityElo(activityId: string): Promise<
   return sortEloRows([...map.values()].map((row) => ({ ...row, elo: Math.round(row.elo) })));
 }
 
+function hasCompleteCurrentRanking(
+  entries: { id: string }[],
+  voteRows: { entryId: string; rank: number }[],
+) {
+  if (entries.length < 2 || voteRows.length !== entries.length) return false;
+
+  const entryIds = new Set(entries.map((entry) => entry.id));
+  const ranks = new Set<number>();
+  for (const row of voteRows) {
+    if (!entryIds.has(row.entryId)) return false;
+    if (!Number.isInteger(row.rank) || row.rank < 1 || row.rank > entries.length) return false;
+    if (ranks.has(row.rank)) return false;
+    ranks.add(row.rank);
+  }
+  return ranks.size === entries.length;
+}
+
 export async function getPublicSubjectiveTestActivityDetail(id: string, userId?: string) {
   const [activity] = await db
     .select({
@@ -272,7 +289,7 @@ export async function getPublicSubjectiveTestActivityDetail(id: string, userId?:
     .where(and(eq(subjectiveTestActivities.id, id), eq(subjectiveTestActivities.status, "published")));
   if (!activity) return null;
 
-  const [entries, voteRows, participantRows, ranking] = await Promise.all([
+  const [entries, voteRows, participantRows] = await Promise.all([
     db
       .select({
         id: subjectiveTestEntries.id,
@@ -294,14 +311,17 @@ export async function getPublicSubjectiveTestActivityDetail(id: string, userId?:
       .select({ value: countDistinct(subjectiveTestVotes.userId) })
       .from(subjectiveTestVotes)
       .where(eq(subjectiveTestVotes.activityId, id)),
-    getSubjectiveTestActivityElo(id),
   ]);
+
+  const rankingUnlocked = Boolean(userId) && hasCompleteCurrentRanking(entries, voteRows);
+  const ranking = rankingUnlocked ? await getSubjectiveTestActivityElo(id) : [];
 
   return {
     ...activity,
     entries,
     userRanks: new Map(voteRows.map((row) => [row.entryId, row.rank])),
     voteCount: Number(participantRows[0]?.value ?? 0),
+    rankingUnlocked,
     ranking,
   };
 }

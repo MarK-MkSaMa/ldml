@@ -10,7 +10,7 @@
  *   - 管理员后台手动触发全量检查
  */
 import { db } from "@/db";
-import { models, modelStats } from "@/db/schema";
+import { dimensions, models, modelStats } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 
 const OBSERVE_DAYS = 7;
@@ -25,6 +25,7 @@ export async function maybePromoteModel(modelId: string): Promise<boolean> {
       id: models.id,
       status: models.status,
       releasedAt: models.releasedAt,
+      categoryId: models.categoryId,
     })
     .from(models)
     .where(eq(models.id, modelId));
@@ -40,7 +41,13 @@ export async function maybePromoteModel(modelId: string): Promise<boolean> {
     const [row] = await db
       .select({ maxVotes: sql<number>`coalesce(max(${modelStats.voteCount}), 0)::int` })
       .from(modelStats)
-      .where(eq(modelStats.modelId, modelId));
+      .innerJoin(dimensions, eq(dimensions.id, modelStats.dimensionId))
+      .where(
+        and(
+          eq(modelStats.modelId, modelId),
+          eq(dimensions.categoryId, m.categoryId),
+        ),
+      );
     eligibleByVotes = (row?.maxVotes ?? 0) >= OBSERVE_VOTES;
   }
 

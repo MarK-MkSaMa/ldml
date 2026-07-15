@@ -20,7 +20,7 @@
  */
 import { db } from "@/db";
 import { votes, voteHistory, modelStats, dimensions, models, users } from "@/db/schema";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { voteWeight } from "./vote-weight";
 
@@ -186,7 +186,15 @@ export async function recomputeModelStat(modelId: string, dimensionId: number): 
   const myVotes = await db
     .select({ score: votes.score, updatedAt: votes.updatedAt })
     .from(votes)
-    .where(and(eq(votes.modelId, modelId), eq(votes.dimensionId, dimensionId)));
+    .innerJoin(models, eq(models.id, votes.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+    .where(
+      and(
+        eq(votes.modelId, modelId),
+        eq(votes.dimensionId, dimensionId),
+        eq(models.categoryId, dimensions.categoryId),
+      ),
+    );
 
   const rawCount = myVotes.length;
   let weightedSum = 0;
@@ -202,7 +210,14 @@ export async function recomputeModelStat(modelId: string, dimensionId: number): 
   const allVotesInDim = await db
     .select({ score: votes.score, updatedAt: votes.updatedAt })
     .from(votes)
-    .where(eq(votes.dimensionId, dimensionId));
+    .innerJoin(models, eq(models.id, votes.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+    .where(
+      and(
+        eq(votes.dimensionId, dimensionId),
+        eq(models.categoryId, dimensions.categoryId),
+      ),
+    );
 
   let globalWeightedSum = 0;
   let globalEffectiveN = 0;
@@ -262,10 +277,42 @@ export async function getUserVotesForModel(
   const rows = await db
     .select({ dimensionId: votes.dimensionId, score: votes.score })
     .from(votes)
-    .where(and(eq(votes.userId, userId), eq(votes.modelId, modelId)));
+    .innerJoin(models, eq(models.id, votes.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+    .where(
+      and(
+        eq(votes.userId, userId),
+        eq(votes.modelId, modelId),
+        eq(models.categoryId, dimensions.categoryId),
+      ),
+    );
   const out: Record<number, number> = {};
   for (const r of rows) out[r.dimensionId] = r.score;
   return out;
+}
+
+/**
+ * 批量查询用户至少评过一个当前有效维度的模型。
+ */
+export async function getUserRatedModelIds(
+  userId: string,
+  modelIds: string[],
+): Promise<Set<string>> {
+  if (modelIds.length === 0) return new Set();
+
+  const rows = await db
+    .selectDistinct({ modelId: votes.modelId })
+    .from(votes)
+    .innerJoin(models, eq(models.id, votes.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+    .where(
+      and(
+        eq(votes.userId, userId),
+        inArray(votes.modelId, modelIds),
+        eq(models.categoryId, dimensions.categoryId),
+      ),
+    );
+  return new Set(rows.map((row) => row.modelId));
 }
 
 export type ModelVoteInsights = {
@@ -306,7 +353,14 @@ export async function getModelVoteInsights(
         voterCount: sql<number>`count(distinct ${votes.userId})::int`,
       })
       .from(votes)
-      .where(eq(votes.modelId, modelId)),
+      .innerJoin(models, eq(models.id, votes.modelId))
+      .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+      .where(
+        and(
+          eq(votes.modelId, modelId),
+          eq(models.categoryId, dimensions.categoryId),
+        ),
+      ),
     db
       .select({
         dimensionId: votes.dimensionId,
@@ -314,7 +368,14 @@ export async function getModelVoteInsights(
         count: sql<number>`count(*)::int`,
       })
       .from(votes)
-      .where(eq(votes.modelId, modelId))
+      .innerJoin(models, eq(models.id, votes.modelId))
+      .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+      .where(
+        and(
+          eq(votes.modelId, modelId),
+          eq(models.categoryId, dimensions.categoryId),
+        ),
+      )
       .groupBy(votes.dimensionId, votes.score),
     db
       .select({
@@ -330,8 +391,14 @@ export async function getModelVoteInsights(
       })
       .from(votes)
       .innerJoin(users, eq(users.id, votes.userId))
+      .innerJoin(models, eq(models.id, votes.modelId))
       .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
-      .where(eq(votes.modelId, modelId))
+      .where(
+        and(
+          eq(votes.modelId, modelId),
+          eq(models.categoryId, dimensions.categoryId),
+        ),
+      )
       .orderBy(desc(votes.updatedAt))
       .limit(recentLimit),
   ]);

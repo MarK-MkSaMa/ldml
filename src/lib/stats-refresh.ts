@@ -6,7 +6,7 @@
  * 在响应返回后异步执行（如必要）。
  */
 import { db } from "@/db";
-import { modelStats, votes, models } from "@/db/schema";
+import { dimensions, modelStats, votes, models } from "@/db/schema";
 import { and, eq, lt, sql } from "drizzle-orm";
 import { voteWeight } from "./vote-weight";
 
@@ -52,7 +52,10 @@ export async function recomputeAllStats(): Promise<{
       score: votes.score,
       updatedAt: votes.updatedAt,
     })
-    .from(votes);
+    .from(votes)
+    .innerJoin(models, eq(models.id, votes.modelId))
+    .innerJoin(dimensions, eq(dimensions.id, votes.dimensionId))
+    .where(eq(models.categoryId, dimensions.categoryId));
 
   // 按 dim 算全站加权均值 m
   const globalByDim = new Map<number, { weightedSum: number; effectiveN: number }>();
@@ -154,9 +157,6 @@ export async function recomputeAllStats(): Promise<{
       );
     rows++;
   }
-
-  // 抑制 unused
-  void models;
 
   return { rows, durationMs: Date.now() - t0 };
 }
