@@ -82,6 +82,7 @@ export function CommentsSection({
               key={s}
               type="button"
               onClick={() => changeSort(s)}
+              aria-pressed={s === sort}
               className={`rounded-md px-2 py-1 transition-colors ${
                 s === sort
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -130,7 +131,7 @@ export function CommentsSection({
                 isReply={false}
               />
               {c.replies && c.replies.length > 0 && (
-                <ul className="mt-3 ml-10 space-y-3 border-l-2 border-zinc-100 pl-4 dark:border-zinc-800">
+                <ul className="mt-3 ml-2 space-y-3 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800 sm:ml-10 sm:pl-4">
                   {c.replies.map((r) => (
                     <li key={r.id}>
                       <CommentItem
@@ -272,7 +273,7 @@ function CommentItem({
         <div className="min-w-0 flex-1">
           {/* 作者行 */}
           <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
-            <span className="font-medium">{c.author.username}</span>
+            <span className="break-words font-medium [overflow-wrap:anywhere]">{c.author.username}</span>
             {c.author.isAdmin && (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
                 管理员
@@ -299,7 +300,7 @@ function CommentItem({
             </div>
           ) : (
             <div
-              className="markdown-body mt-1 text-sm"
+              className="markdown-body mt-1 min-w-0 break-words text-sm [overflow-wrap:anywhere]"
               dangerouslySetInnerHTML={{ __html: c.contentHtml }}
             />
           )}
@@ -311,6 +312,8 @@ function CommentItem({
               disabled={!viewer.canComment || reacting}
               onClick={() => toggleReaction("like")}
               title={viewer.canComment ? "点赞" : "登录并满足等级后可点赞"}
+              aria-label={`点赞，当前 ${likeCount} 个赞`}
+              aria-pressed={myReaction === "like"}
               className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                 myReaction === "like"
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -325,6 +328,8 @@ function CommentItem({
               disabled={!viewer.canComment || reacting}
               onClick={() => toggleReaction("dislike")}
               title={viewer.canComment ? "点踩" : "登录并满足等级后可点踩"}
+              aria-label={`点踩，当前 ${dislikeCount} 个踩`}
+              aria-pressed={myReaction === "dislike"}
               className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                 myReaction === "dislike"
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -377,7 +382,7 @@ function CommentItem({
           </div>
 
           {actionError && (
-            <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+            <div className="mt-2 break-words text-xs text-red-600 [overflow-wrap:anywhere] dark:text-red-400">
               {actionError}
             </div>
           )}
@@ -469,13 +474,13 @@ function EditForm({
         rows={3}
         className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100"
       />
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-zinc-500">
           {content.length} / {MAX}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {error && (
-            <span className="text-xs text-red-600 dark:text-red-400">
+            <span className="break-words text-xs text-red-600 [overflow-wrap:anywhere] dark:text-red-400">
               {error}
             </span>
           )}
@@ -594,9 +599,9 @@ function ReportPanel({
         placeholder="补充说明（可选，≤ 500 字）"
         className="mt-2 w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100"
       />
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {error ? (
-          <span className="text-xs text-red-600 dark:text-red-400">
+          <span className="break-words text-xs text-red-600 [overflow-wrap:anywhere] dark:text-red-400">
             {error}
           </span>
         ) : (
@@ -604,7 +609,7 @@ function ReportPanel({
             举报会进入审核队列；同一评论你只能举报一次
           </span>
         )}
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
@@ -684,13 +689,13 @@ function CommentForm({
         placeholder={placeholder ?? "支持 Markdown · 友善讨论"}
         className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100"
       />
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-zinc-500">
           {content.length} / {MAX}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {error && (
-            <span className="text-xs text-red-600 dark:text-red-400">
+            <span className="break-words text-xs text-red-600 [overflow-wrap:anywhere] dark:text-red-400">
               {error}
             </span>
           )}

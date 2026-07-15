@@ -23,7 +23,7 @@ export default async function AnnouncementDetailPage({
     <main className="flex flex-1 flex-col">
       <SiteHeader maxWidth="max-w-[96rem]" />
 
-      <article className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
+      <article className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
         <nav className="mb-4 text-sm text-zinc-500">
           <Link
             href="/announcements"
@@ -33,7 +33,7 @@ export default async function AnnouncementDetailPage({
           </Link>
         </nav>
 
-        <div className="max-w-4xl">
+        <div>
           <h1 className="text-3xl font-bold tracking-tight">
             {a.isPinned && <span className="mr-2">📌</span>}
             {a.title}

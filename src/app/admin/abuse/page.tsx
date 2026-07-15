@@ -27,7 +27,7 @@ export default async function AdminAbusePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">评分异常检测</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          基于历史数据扫描可疑模式。**仅检测和提示**，不会自动撤销任何投票，由管理员人工判断处理。
+          基于历史数据扫描可疑模式。<strong className="font-semibold text-zinc-700 dark:text-zinc-300">仅检测和提示</strong>，不会自动撤销任何投票，由管理员人工判断处理。
         </p>
       </div>
 

@@ -28,7 +28,7 @@ export default async function NewModelRequestPage({
       <SiteHeader />
       <AnnouncementBanner />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <nav className="mb-4 text-sm text-zinc-500">
           <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100">
             ← 返回首页
@@ -57,7 +57,7 @@ export default async function NewModelRequestPage({
         ) : categoryRows.length === 0 ? (
           <Notice title="暂无分类" message="当前还没有可申请的模型分类。" />
         ) : (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
             <ModelRequestForm
               categories={categoryRows}
               initialCategoryId={selectedCategory?.id ?? 0}

@@ -32,13 +32,13 @@ export default async function SubjectiveTestDetailPage({ params }: { params: Pro
 
         <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{activity.categoryName}</span>
+            <span className="break-words rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-900 dark:text-zinc-300">{activity.categoryName}</span>
             <span>{activity.voteCount} 人投票</span>
             {linuxdoUrl && (
               <a href={linuxdoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">Linux DO 活动帖</a>
             )}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">{activity.title}</h1>
+          <h1 className="break-words text-3xl font-bold tracking-tight [overflow-wrap:anywhere]">{activity.title}</h1>
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <Block title="测试需求" content={activity.requirement} />
             <Block title="结果说明" content={activity.resultNote || "暂未填写结果说明"} muted={!activity.resultNote} />
@@ -61,12 +61,12 @@ export default async function SubjectiveTestDetailPage({ params }: { params: Pro
               ) : (
                 <ul className="space-y-4">
                   {activity.entries.map((entry, index) => (
-                    <li key={entry.id} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                    <li key={entry.id} className="min-w-0 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
                       <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="font-semibold">{entry.modelName}</h3>
+                        <h3 className="min-w-0 break-words font-semibold [overflow-wrap:anywhere]">{entry.modelName}</h3>
                         <span className="text-xs text-zinc-500">输出 #{index + 1}</span>
                       </div>
-                      <div className="whitespace-pre-wrap rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300">{entry.output}</div>
+                      <div className="whitespace-pre-wrap break-words rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-900/70 dark:text-zinc-300">{entry.output}</div>
                     </li>
                   ))}
                 </ul>
@@ -115,7 +115,7 @@ function Block({ title, content, muted = false }: { title: string; content: stri
   return (
     <div>
       <div className="mb-1 text-xs font-medium text-zinc-500">{title}</div>
-      <div className={`whitespace-pre-wrap rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900/70 ${muted ? "text-zinc-400" : "text-zinc-700 dark:text-zinc-300"}`}>
+      <div className={`whitespace-pre-wrap break-words rounded-lg bg-zinc-50 px-3 py-2 text-sm [overflow-wrap:anywhere] dark:bg-zinc-900/70 ${muted ? "text-zinc-400" : "text-zinc-700 dark:text-zinc-300"}`}>
         {content}
       </div>
     </div>

@@ -6,7 +6,7 @@
  * 页面默认只展示紧凑概览；用户点击后再打开弹窗进行评分，
  * 也可以查看社区评分分布和最近评分列表。
  */
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ModelVoteInsights } from "@/lib/votes";
 
@@ -228,7 +228,7 @@ function RatingForm({
       <ScoreGuide />
 
       {error && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+        <div role="alert" className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </div>
       )}
@@ -254,7 +254,11 @@ function RatingForm({
                 社区均分 {d.avg !== null ? d.avg.toFixed(1) : "—"} · {d.voteCount.toLocaleString()} 票
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-1">
+            <div
+              className="grid grid-cols-5 gap-1.5 sm:grid-cols-10"
+              role="group"
+              aria-label={`${d.name}评分`}
+            >
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
                 const active = my === n;
                 return (
@@ -264,7 +268,9 @@ function RatingForm({
                     disabled={!canVote || pending}
                     onClick={() => onSubmit(d.id, n)}
                     title={`${n} 分 · ${SCORE_HINTS[n]}`}
-                    className={`h-8 w-8 rounded-md border text-sm tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    aria-label={`${d.name}：${n} 分，${SCORE_HINTS[n]}`}
+                    aria-pressed={active}
+                    className={`h-9 min-w-0 rounded-md border text-sm tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
                         ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                         : "border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
@@ -274,11 +280,14 @@ function RatingForm({
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-2 flex justify-end">
               <button
                 type="button"
                 disabled={!canVote || pending || my === undefined}
                 onClick={() => onWithdraw(d.id)}
-                className="ml-2 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:text-red-400"
+                aria-label={`撤回${d.name}评分`}
+                className="rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:text-red-400"
               >
                 撤回
               </button>
@@ -330,12 +339,16 @@ function VoteInsights({
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-10 gap-1.5">
+                <div
+                  className="grid grid-cols-10 gap-1.5"
+                  role="img"
+                  aria-label={`${d.name}分数分布：${Array.from({ length: 10 }, (_, index) => `${index + 1} 分 ${distribution[index + 1] ?? 0} 票`).join("，")}`}
+                >
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((score) => {
                     const count = distribution[score] ?? 0;
                     const height = count === 0 ? 8 : Math.max(12, (count / maxCount) * 56);
                     return (
-                      <div key={score} className="flex flex-col items-center gap-1">
+                      <div key={score} className="flex flex-col items-center gap-1" aria-hidden="true">
                         <div className="flex h-14 w-full items-end justify-center rounded bg-zinc-50 px-1 dark:bg-zinc-900">
                           <div
                             className="w-full rounded-t bg-zinc-900 dark:bg-zinc-100"
@@ -421,16 +434,66 @@ function Dialog({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -438,26 +501,36 @@ function Dialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
+        tabIndex={-1}
         aria-label="关闭弹窗"
         className="absolute inset-0 bg-black/45"
-        onClick={onClose}
+        onClick={() => onCloseRef.current()}
       />
-      <div className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+        className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-4 py-4 sm:px-5 dark:border-zinc-800">
           <div>
-            <h2 className="text-lg font-semibold">{title}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{description}</p>
+            <h2 id={titleId} className="text-lg font-semibold">{title}</h2>
+            <p id={descriptionId} className="mt-1 text-sm text-zinc-500">{description}</p>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             className="rounded-md px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-            aria-label="关闭"
+            aria-label="关闭弹窗"
           >
             ×
           </button>
         </div>
-        <div className="overflow-y-auto px-5 py-4">{children}</div>
+        <div className="overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
       </div>
     </div>
   );
@@ -473,6 +546,7 @@ const SCORE_GUIDE_KEY = "score_guide_open";
 
 function ScoreGuide() {
   const [open, setOpen] = useState(true);
+  const contentId = useId();
 
   function toggle() {
     setOpen((prev) => {
@@ -487,18 +561,20 @@ function ScoreGuide() {
       <button
         type="button"
         onClick={toggle}
+        aria-expanded={open}
+        aria-controls={contentId}
         className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
       >
         <span>
           💡 评分参考：
-          <span className="text-zinc-500">每个分数都有含义，鼠标悬停按钮可看说明</span>
+          <span className="text-zinc-500">每个分数都有对应说明，点击或查看下方列表即可了解</span>
         </span>
         <span className="shrink-0 text-xs text-zinc-500">
           {open ? "收起 ▲" : "展开 ▼"}
         </span>
       </button>
       {open && (
-        <ul className="border-t border-zinc-200 px-4 py-3 text-xs dark:border-zinc-800">
+        <ul id={contentId} className="border-t border-zinc-200 px-4 py-3 text-xs dark:border-zinc-800">
           {Object.entries(SCORE_HINTS).map(([n, hint]) => (
             <li
               key={n}

@@ -4,6 +4,8 @@ import { getCategoryByIdForAdmin } from "@/lib/admin-categories";
 import { CategoryForm } from "../category-form";
 import { updateCategoryAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditCategoryPage({
   params,
 }: {

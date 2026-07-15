@@ -70,7 +70,7 @@ export default async function ModelDetailPage({
     <main className="flex flex-1 flex-col">
       <SiteHeader maxWidth="max-w-[96rem]" />
 
-      <div className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         {/* 面包屑 */}
         <nav className="mb-6 text-sm text-zinc-500">
           <Link
@@ -84,16 +84,16 @@ export default async function ModelDetailPage({
         {/* 基本信息 */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{model.name}</h1>
+            <div className="flex min-w-0 items-start gap-3">
+              <h1 className="min-w-0 break-words text-3xl font-bold tracking-tight [overflow-wrap:anywhere]">{model.name}</h1>
               {model.status === "observing" && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
                   观察区
                 </span>
               )}
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
-              {model.lab && <span>来源：{model.lab}</span>}
+              {model.lab && <span className="break-words [overflow-wrap:anywhere]">来源：{model.lab}</span>}
               {model.openWeights !== null && <span>权重：{formatWeight(model.openWeights)}</span>}
             </div>
             <ModelMetadata model={model} />
@@ -121,8 +121,8 @@ export default async function ModelDetailPage({
               </span>
             )}
           </div>
-          <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full min-w-[28rem] text-sm">
               <tbody>
                 {model.dimensions.map((d, i) => (
                   <tr
@@ -218,7 +218,7 @@ function ModelMetadata({ model }: { model: DetailModel }) {
           className="min-w-[6.5rem] max-w-[14rem] rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
         >
           <dt className="font-medium text-zinc-700 dark:text-zinc-300">{row.label}</dt>
-          <dd className="mt-1 truncate" title={row.value}>{row.value}</dd>
+          <dd className="mt-1 break-words [overflow-wrap:anywhere]">{row.value}</dd>
         </div>
       ))}
     </dl>

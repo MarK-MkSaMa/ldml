@@ -38,7 +38,7 @@ export default async function AdminCommentsPage({
       </div>
 
       {/* 筛选 chip */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {FILTERS.map((f) => {
           const active = f.value === filter;
           return (

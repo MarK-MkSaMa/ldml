@@ -13,7 +13,7 @@ export default async function AdminAnnouncementsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">公告管理</h1>
         <Link
           href="/admin/announcements/new"
@@ -29,7 +29,8 @@ export default async function AdminAnnouncementsPage() {
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">标题</th>
@@ -82,7 +83,8 @@ export default async function AdminAnnouncementsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

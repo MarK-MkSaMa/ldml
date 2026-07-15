@@ -62,7 +62,7 @@ export default async function SubjectiveTestsPage({
             )}
           </section>
 
-          <aside className="h-fit rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <aside id="elo-ranking" className="h-fit scroll-mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="text-lg font-semibold">分类 Elo 排行榜</h2>
             <div className="mt-4 flex flex-wrap gap-2 text-sm">
               {categories.map((category) => (

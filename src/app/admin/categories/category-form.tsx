@@ -74,7 +74,7 @@ export function CategoryForm({
         {slugChanged && (
           <p className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
             ⚠️ 修改 slug 会破坏所有指向旧 URL 的链接和书签（例如{" "}
-            <code className="font-mono">/rankings/open-source/{originalSlug}</code>）。
+            <code className="font-mono">/rankings/{originalSlug}</code>）。
           </p>
         )}
       </Row>

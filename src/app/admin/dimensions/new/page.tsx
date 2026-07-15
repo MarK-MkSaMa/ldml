@@ -3,6 +3,8 @@ import { listCategoriesForAdmin } from "@/lib/admin-dimensions";
 import { DimensionForm } from "../dimension-form";
 import { createDimensionAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewDimensionPage() {
   const cats = await listCategoriesForAdmin();
   return (

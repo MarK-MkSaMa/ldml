@@ -52,7 +52,7 @@ export default async function BenchmarksPage() {
 
 function LeaderboardSection({ leaderboard }: { leaderboard: BenchmarkLeaderboardRow[] }) {
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:sticky lg:top-6">
+    <section className="h-fit self-start rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:sticky lg:top-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">模型基准测试排行榜</h2>
@@ -77,7 +77,7 @@ function LeaderboardSection({ leaderboard }: { leaderboard: BenchmarkLeaderboard
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="shrink-0 text-xs font-semibold text-zinc-400">#{index + 1}</span>
-                    <span className="truncate font-medium" title={row.modelName}>{row.modelName}</span>
+                    <span className="break-words font-medium [overflow-wrap:anywhere]">{row.modelName}</span>
                   </div>
                   <div className="mt-1 text-xs text-zinc-500">
                     {row.correctCount} 对 / {row.wrongCount} 错 · {row.totalCount} 题
@@ -97,7 +97,7 @@ function LeaderboardSection({ leaderboard }: { leaderboard: BenchmarkLeaderboard
 
 function QuestionGrid({ questions }: { questions: PublicBenchmarkQuestion[] }) {
   return (
-    <section>
+    <section id="questions">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">公开题库</h2>
@@ -124,9 +124,9 @@ function QuestionGrid({ questions }: { questions: PublicBenchmarkQuestion[] }) {
 
 function QuestionCard({ question }: { question: PublicBenchmarkQuestion }) {
   return (
-    <li className="flex min-h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <li className="flex min-h-full min-w-0 flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
-        <span className="truncate">上传者：{question.uploaderName}</span>
+        <span className="min-w-0 break-words [overflow-wrap:anywhere]">上传者：{question.uploaderName}</span>
         <span className={`rounded-full px-2 py-0.5 ${question.isTested ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"}`}>
           {question.isTested ? "已测试" : "未测试"}
         </span>
@@ -143,6 +143,12 @@ function QuestionCard({ question }: { question: PublicBenchmarkQuestion }) {
       <div className="mt-4 space-y-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
         <ModelPills title="正确" models={question.correctModels} tone="green" />
         <ModelPills title="错误" models={question.wrongModels} tone="red" />
+        <Link
+          href={`/benchmarks/questions/${question.id}`}
+          className="inline-flex text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+        >
+          查看完整题目 →
+        </Link>
       </div>
     </li>
   );
@@ -160,7 +166,7 @@ function CompactBlock({
   return (
     <div>
       <div className="mb-1 text-xs font-medium text-zinc-500">{title}</div>
-      <p className={`whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300 ${lines}`}>
+      <p className={`whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700 [overflow-wrap:anywhere] dark:text-zinc-300 ${lines}`}>
         {content}
       </p>
     </div>
@@ -199,7 +205,7 @@ function Badge({ children, tone }: { children: React.ReactNode; tone: "green" | 
     tone === "green"
       ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300"
       : "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300";
-  return <span className={`rounded-full px-2 py-1 text-xs ${cls}`}>{children}</span>;
+  return <span className={`max-w-full break-words rounded-full px-2 py-1 text-xs [overflow-wrap:anywhere] ${cls}`}>{children}</span>;
 }
 
 function formatRate(value: number) {

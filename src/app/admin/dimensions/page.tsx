@@ -14,7 +14,7 @@ export default async function AdminDimensionsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">维度管理</h1>
         <Link
           href="/admin/dimensions/new"
@@ -46,7 +46,8 @@ export default async function AdminDimensionsPage() {
                 该分类下还没有维度
               </p>
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-sm">
                 <thead className="border-b border-zinc-100 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800">
                   <tr>
                     <th className="px-4 py-2 font-medium">顺序</th>
@@ -78,7 +79,8 @@ export default async function AdminDimensionsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             )}
           </section>
         ))}

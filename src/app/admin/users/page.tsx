@@ -69,7 +69,7 @@ export default async function AdminUsersPage({
             );
           })}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto">
           {filter !== "all" && (
             <input type="hidden" name="filter" value={filter} />
           )}
@@ -78,7 +78,7 @@ export default async function AdminUsersPage({
             name="q"
             defaultValue={search}
             placeholder="用户名 或 Linux DO ID"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100"
+            className="min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm focus:border-zinc-900 focus:outline-none sm:w-64 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100"
           />
           <button
             type="submit"
@@ -95,7 +95,8 @@ export default async function AdminUsersPage({
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">用户</th>
@@ -176,7 +177,8 @@ export default async function AdminUsersPage({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

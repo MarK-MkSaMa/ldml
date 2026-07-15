@@ -60,11 +60,11 @@ export default async function AdminBenchmarksPage({
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                       <span className={`rounded-full px-2 py-0.5 font-medium ${label.cls}`}>{label.name}</span>
-                      <span>上传者：{row.uploaderName}</span>
+                      <span className="break-words [overflow-wrap:anywhere]">上传者：{row.uploaderName}</span>
                       <span>提交：{formatDateTime(row.createdAt)}</span>
                       <span>结果：{row.results.length}</span>
                     </div>
-                    <p className="line-clamp-2 whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
+                    <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-zinc-800 [overflow-wrap:anywhere] dark:text-zinc-200">
                       {summarize(row.question)}
                     </p>
                   </div>

@@ -30,6 +30,7 @@ export type BenchmarkResultInput = {
 };
 
 export type PublicBenchmarkQuestion = Awaited<ReturnType<typeof listPublicBenchmarkQuestions>>[number];
+export type PublicBenchmarkQuestionDetail = NonNullable<Awaited<ReturnType<typeof getPublicBenchmarkQuestion>>>;
 export type AdminBenchmarkQuestion = Awaited<ReturnType<typeof listBenchmarkQuestionsForAdmin>>[number];
 export type AdminBenchmarkQuestionDetail = NonNullable<Awaited<ReturnType<typeof getBenchmarkQuestionForAdmin>>>;
 export type BenchmarkLeaderboardRow = Awaited<ReturnType<typeof getBenchmarkLeaderboard>>[number];
@@ -179,6 +180,38 @@ export async function listPublicBenchmarkQuestions() {
       wrongModels: questionResults.filter((r) => !r.isCorrect).map((r) => r.modelName),
     };
   });
+}
+
+export async function getPublicBenchmarkQuestion(id: string) {
+  const [question] = await db
+    .select({
+      id: benchmarkQuestions.id,
+      question: benchmarkQuestions.question,
+      referenceAnswer: benchmarkQuestions.referenceAnswer,
+      judgeNote: benchmarkQuestions.judgeNote,
+      createdAt: benchmarkQuestions.createdAt,
+      uploaderName: users.username,
+    })
+    .from(benchmarkQuestions)
+    .innerJoin(users, eq(benchmarkQuestions.uploaderId, users.id))
+    .where(and(eq(benchmarkQuestions.id, id), eq(benchmarkQuestions.status, "approved")));
+
+  if (!question) return null;
+
+  const results = await db
+    .select({
+      id: benchmarkResults.id,
+      modelName: benchmarkResults.modelName,
+      isCorrect: benchmarkResults.isCorrect,
+      modelAnswer: benchmarkResults.modelAnswer,
+      note: benchmarkResults.note,
+      updatedAt: benchmarkResults.updatedAt,
+    })
+    .from(benchmarkResults)
+    .where(eq(benchmarkResults.questionId, id))
+    .orderBy(desc(benchmarkResults.isCorrect), asc(benchmarkResults.modelName));
+
+  return { ...question, results };
 }
 
 export async function listBenchmarkQuestionsForAdmin(filter: { status?: BenchmarkQuestionStatus } = {}) {

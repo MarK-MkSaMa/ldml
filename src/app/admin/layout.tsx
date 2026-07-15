@@ -12,7 +12,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import { getCurrentUserFresh } from "@/lib/current-user";
-import { AdminNav } from "./admin-nav";
+import { AdminMobileNav, AdminNav } from "./admin-nav";
 
 export default async function AdminLayout({
   children,
@@ -47,20 +47,21 @@ export default async function AdminLayout({
     <div className="flex min-h-full flex-1 flex-col bg-zinc-50 dark:bg-zinc-950">
       {/* 顶部 */}
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-lg font-semibold">
+        <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <AdminMobileNav />
+            <Link href="/admin" className="truncate text-base font-semibold sm:text-lg">
               LDML · 后台
             </Link>
             <Link
               href="/"
-              className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+              className="hidden shrink-0 text-sm text-zinc-500 hover:text-zinc-900 sm:inline dark:hover:text-zinc-100"
             >
               ← 返回前台
             </Link>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">
+          <div className="flex shrink-0 items-center gap-3 text-sm">
+            <span className="hidden max-w-40 truncate text-zinc-700 md:inline dark:text-zinc-300">
               {user.username}
             </span>
             <form
@@ -81,9 +82,11 @@ export default async function AdminLayout({
       </header>
 
       {/* 主体：侧边栏 + 内容 */}
-      <div className="flex flex-1">
+      <div className="flex min-w-0 flex-1">
         <AdminNav />
-        <main className="flex-1 overflow-x-hidden px-8 py-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

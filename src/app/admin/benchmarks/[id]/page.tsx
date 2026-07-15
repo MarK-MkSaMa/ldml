@@ -38,7 +38,7 @@ export default async function AdminBenchmarkDetailPage({
           <h1 className="mt-2 text-2xl font-bold tracking-tight">基准测试详情</h1>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             <span className={`rounded-full px-2 py-0.5 font-medium ${label.cls}`}>{label.name}</span>
-            <span>上传者：{question.uploaderName}</span>
+            <span className="break-words [overflow-wrap:anywhere]">上传者：{question.uploaderName}</span>
             <span>提交：{formatDateTime(question.createdAt)}</span>
             {question.reviewedAt && <span>审核/编辑：{formatDateTime(question.reviewedAt)}</span>}
             <span>结果：{question.results.length}</span>
@@ -56,7 +56,7 @@ export default async function AdminBenchmarkDetailPage({
         <Block title="参考答案" content={question.referenceAnswer} />
         <Block title="判题说明" content={question.judgeNote || "—"} />
         {question.rejectReason && (
-          <div className="mt-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
+          <div className="mt-4 break-words rounded bg-red-50 px-3 py-2 text-sm text-red-700 [overflow-wrap:anywhere] dark:bg-red-950/30 dark:text-red-300">
             拒绝原因：{question.rejectReason}
           </div>
         )}
@@ -120,7 +120,7 @@ export default async function AdminBenchmarkDetailPage({
               <div key={result.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">{result.modelName}</span>
+                    <span className="break-words font-semibold [overflow-wrap:anywhere]">{result.modelName}</span>
                     <span className={result.isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
                       {result.isCorrect ? "正确" : "错误"}
                     </span>
@@ -151,7 +151,7 @@ function Block({ title, content, compact = false }: { title: string; content: st
   return (
     <div className={compact ? "" : "mt-4"}>
       <div className="mb-1 text-xs font-medium text-zinc-500">{title}</div>
-      <div className="whitespace-pre-wrap rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+      <div className="whitespace-pre-wrap break-words rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-950 dark:text-zinc-300">
         {content}
       </div>
     </div>

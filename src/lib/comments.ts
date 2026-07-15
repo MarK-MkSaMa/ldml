@@ -523,10 +523,18 @@ export type CommentFeedItem = {
 export async function listCommentFeed({
   sort = "latest",
   limit = 50,
+  offset = 0,
 }: {
   sort?: CommentSort;
   limit?: number;
-} = {}): Promise<CommentFeedItem[]> {
+  offset?: number;
+} = {}): Promise<{ items: CommentFeedItem[]; hasMore: boolean }> {
+  const safeLimit = Number.isFinite(limit)
+    ? Math.max(1, Math.min(Math.floor(limit), 100))
+    : 50;
+  const safeOffset = Number.isFinite(offset)
+    ? Math.max(0, Math.min(Math.floor(offset), 1_000_000))
+    : 0;
   const hotExpr = sql<number>`(${comments.likeCount} - ${comments.dislikeCount}) - extract(epoch from (now() - ${comments.createdAt})) / 3600 / 4`;
 
   const rows = await db
@@ -553,10 +561,16 @@ export async function listCommentFeed({
     .innerJoin(models, eq(models.id, comments.modelId))
     .innerJoin(categories, eq(categories.id, models.categoryId))
     .where(eq(comments.isDeleted, false))
-    .orderBy(sort === "hot" ? desc(hotExpr) : desc(comments.createdAt))
-    .limit(Math.max(1, Math.min(limit, 100)));
+    .orderBy(
+      sort === "hot" ? desc(hotExpr) : desc(comments.createdAt),
+      desc(comments.createdAt),
+      desc(comments.id),
+    )
+    .limit(safeLimit + 1)
+    .offset(safeOffset);
 
-  return rows.map((row) => {
+  const hasMore = rows.length > safeLimit;
+  const items = rows.slice(0, safeLimit).map((row) => {
     const hidden = row.comment.isHidden;
     return {
       id: row.comment.id,
@@ -577,6 +591,8 @@ export async function listCommentFeed({
       },
     };
   });
+
+  return { items, hasMore };
 }
 
 // ============================================================

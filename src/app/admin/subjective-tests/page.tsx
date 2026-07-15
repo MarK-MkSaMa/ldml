@@ -66,17 +66,17 @@ export default async function AdminSubjectiveTestsPage({
           {rows.map((row) => {
             const label = STATUS_LABELS[row.status];
             return (
-              <li key={row.id} className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+              <li key={row.id} className="min-w-0 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
+                  <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                       <span className={`rounded-full px-2 py-0.5 font-medium ${label.cls}`}>{label.name}</span>
-                      <span>{row.categoryName}</span>
+                      <span className="break-words [overflow-wrap:anywhere]">{row.categoryName}</span>
                       <span>{row.voteCount} 人投票</span>
-                      <span>创建者：{row.creatorName}</span>
+                      <span className="break-words [overflow-wrap:anywhere]">创建者：{row.creatorName}</span>
                       <span>创建：{formatDateTime(row.createdAt)}</span>
                     </div>
-                    <h2 className="text-xl font-semibold">{row.title}</h2>
+                    <h2 className="break-words text-xl font-semibold [overflow-wrap:anywhere]">{row.title}</h2>
                     {row.status === "published" && (
                       <Link href={`/subjective-tests/${row.id}`} className="mt-2 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400">查看前台详情</Link>
                     )}
@@ -97,8 +97,8 @@ export default async function AdminSubjectiveTestsPage({
                     ) : (
                       <div className="mt-3 space-y-3">
                         {row.entries.map((entry) => (
-                          <details key={entry.id} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-                            <summary className="cursor-pointer text-sm font-medium">#{entry.order} {entry.modelName}</summary>
+                          <details key={entry.id} className="min-w-0 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+                            <summary className="cursor-pointer break-words text-sm font-medium [overflow-wrap:anywhere]">#{entry.order} {entry.modelName}</summary>
                             <EntryForm action={updateSubjectiveTestEntryAction} activityId={row.id} entry={entry} />
                             <form action={deleteSubjectiveTestEntryAction} className="mt-2">
                               <input type="hidden" name="id" value={entry.id} />

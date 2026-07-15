@@ -28,25 +28,28 @@ export default async function AnnouncementsPage() {
             暂无公告
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-4 md:grid-cols-2">
             {items.map((a) => (
-              <li key={a.id}>
+              <li key={a.id} className="min-w-0">
                 <Link
                   href={`/announcements/${a.id}`}
-                  className="block rounded-lg border border-zinc-200 bg-white px-5 py-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  className="flex h-full min-w-0 flex-col rounded-lg border border-zinc-200 bg-white px-5 py-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                 >
-                  <div className="flex items-baseline justify-between gap-4">
-                    <h2 className="truncate text-base font-medium" title={a.title}>
+                  <div className="flex min-w-0 items-start justify-between gap-4">
+                    <h2
+                      className="line-clamp-2 min-w-0 break-words text-base font-medium [overflow-wrap:anywhere]"
+                      title={a.title}
+                    >
                       {a.isPinned && <span className="mr-1">📌</span>}
                       {a.title}
                     </h2>
-                    <span className="shrink-0 text-xs text-zinc-500">
+                    <span className="shrink-0 pt-0.5 text-xs text-zinc-500">
                       {a.publishedAt
                         ? a.publishedAt.toLocaleDateString("zh-CN")
                         : ""}
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="mt-2 line-clamp-3 min-w-0 whitespace-pre-line break-words text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400">
                     {a.content}
                   </p>
                 </Link>

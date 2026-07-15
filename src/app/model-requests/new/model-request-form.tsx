@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { suggestSlug } from "@/lib/slug";
 import { submitModelRequestAction, type ModelRequestFormState } from "./actions";
@@ -25,146 +26,176 @@ export function ModelRequestForm({
   const [openWeights, setOpenWeights] = useState<WeightValue>("unknown");
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-6">
       {state.message && (
         <div
-          className={`rounded-md border px-4 py-3 text-sm ${
+          className={`rounded-lg border px-4 py-3 text-sm ${
             state.ok
               ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-200"
               : "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200"
           }`}
         >
-          {state.message}
+          <p>{state.message}</p>
+          {state.ok && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              <Link href="/" className="font-medium underline underline-offset-4">
+                返回首页
+              </Link>
+              <Link
+                href="/rankings/text"
+                className="font-medium underline underline-offset-4"
+              >
+                查看排行榜
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
-      <Row label="名称" required>
-        <input
-          name="name"
-          value={name}
-          onChange={(e) => {
-            const value = e.target.value;
-            setName(value);
-            if (!slugTouched) setSlug(suggestSlug(value));
-          }}
-          required
-          maxLength={100}
-          className={inputCls}
-          placeholder="GPT-5"
-        />
-      </Row>
+      <FormSection
+        title="基本信息"
+        description="填写模型名称、分类及可核验的来源信息。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="名称" required>
+            <input
+              name="name"
+              value={name}
+              onChange={(e) => {
+                const value = e.target.value;
+                setName(value);
+                if (!slugTouched) setSlug(suggestSlug(value));
+              }}
+              required
+              maxLength={100}
+              className={inputCls}
+              placeholder="GPT-5"
+            />
+          </Row>
 
-      <Row label="slug" required hint="URL 唯一标识；只能小写字母、数字、连字符">
-        <input
-          name="slug"
-          value={slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlug(e.target.value);
-          }}
-          required
-          maxLength={80}
-          pattern="[a-z0-9][a-z0-9-]*"
-          className={inputCls}
-          placeholder="gpt-5"
-        />
-      </Row>
+          <Row label="slug" required hint="URL 唯一标识；只能使用小写字母、数字和连字符">
+            <input
+              name="slug"
+              value={slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(e.target.value);
+              }}
+              required
+              maxLength={80}
+              pattern="[a-z0-9][a-z0-9-]*"
+              className={inputCls}
+              placeholder="gpt-5"
+            />
+          </Row>
 
-      <Row label="分类" required>
-        <select
-          name="categoryId"
-          defaultValue={initialCategoryId || categories[0]?.id}
-          required
-          className={inputCls}
-        >
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </Row>
+          <Row label="分类" required>
+            <select
+              name="categoryId"
+              defaultValue={initialCategoryId || categories[0]?.id}
+              required
+              className={inputCls}
+            >
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </Row>
 
-      <Row label="来源 lab">
-        <input
-          name="lab"
-          maxLength={80}
-          className={inputCls}
-          placeholder="OpenAI / Anthropic / Alibaba ..."
-        />
-      </Row>
+          <Row label="来源机构">
+            <input
+              name="lab"
+              maxLength={80}
+              className={inputCls}
+              placeholder="OpenAI / Anthropic / Alibaba ..."
+            />
+          </Row>
 
-      <Row label="权重">
-        <select
-          name="openWeights"
-          value={openWeights}
-          onChange={(e) => setOpenWeights(e.target.value as WeightValue)}
-          className={inputCls}
-        >
-          <option value="unknown">未知</option>
-          <option value="true">开源权重</option>
-          <option value="false">闭源权重</option>
-        </select>
-      </Row>
+          <Row label="官网或文档">
+            <input
+              name="homepageUrl"
+              type="url"
+              className={inputCls}
+              placeholder="https://..."
+            />
+          </Row>
 
-      <Row label="官网 / 文档">
-        <input
-          name="homepageUrl"
-          type="url"
-          className={inputCls}
-          placeholder="https://..."
-        />
-      </Row>
+          <Row label="发布日期">
+            <input name="releasedAt" type="date" className={inputCls} />
+          </Row>
+        </div>
+      </FormSection>
 
-      <Row label="发布日期">
-        <input name="releasedAt" type="date" className={inputCls} />
-      </Row>
+      <FormSection
+        title="能力参数"
+        description="补充上下文限制、输入输出类型和功能支持情况。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="上下文 tokens">
+            <input
+              name="contextTokens"
+              type="number"
+              min={0}
+              className={inputCls}
+              placeholder="128000"
+            />
+          </Row>
+          <Row label="最大输出 tokens">
+            <input
+              name="outputTokens"
+              type="number"
+              min={0}
+              className={inputCls}
+              placeholder="16384"
+            />
+          </Row>
+          <Row label="输入类型" hint="使用英文逗号分隔，例如 text,image">
+            <input name="inputModalities" className={inputCls} placeholder="text,image" />
+          </Row>
+          <Row label="输出类型" hint="使用英文逗号分隔，例如 text">
+            <input name="outputModalities" className={inputCls} placeholder="text" />
+          </Row>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="上下文 tokens">
-          <input name="contextTokens" type="number" min={0} className={inputCls} placeholder="128000" />
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <CheckOption name="supportsReasoning" label="支持推理" />
+          <CheckOption name="supportsToolCall" label="支持工具调用" />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="权重信息"
+        description="按模型公开情况选择；无法确认时可保留为未知。"
+      >
+        <Row label="权重开放状态">
+          <select
+            name="openWeights"
+            value={openWeights}
+            onChange={(e) => setOpenWeights(e.target.value as WeightValue)}
+            className={inputCls}
+          >
+            <option value="unknown">未知</option>
+            <option value="true">开源权重</option>
+            <option value="false">闭源权重</option>
+          </select>
         </Row>
-        <Row label="最大输出 tokens">
-          <input name="outputTokens" type="number" min={0} className={inputCls} placeholder="16384" />
-        </Row>
-      </div>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="输入类型" hint="逗号分隔，例如 text,image">
-          <input name="inputModalities" className={inputCls} placeholder="text,image" />
-        </Row>
-        <Row label="输出类型" hint="逗号分隔，例如 text">
-          <input name="outputModalities" className={inputCls} placeholder="text" />
-        </Row>
-      </div>
+      <FormSection
+        title="价格信息"
+        description="请按站点约定单位填写，并在提交前核对来源。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <PriceInput name="priceInput" label="输入价格" />
+          <PriceInput name="priceOutput" label="输出价格" />
+          <PriceInput name="priceCacheRead" label="缓存读取价格" />
+          <PriceInput name="priceCacheWrite" label="缓存写入价格" />
+        </div>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="supportsReasoning" className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700" />
-          支持推理
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="supportsToolCall" className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700" />
-          支持工具调用
-        </label>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Row label="输入价格">
-          <input name="priceInput" type="number" min={0} step="0.000001" className={inputCls} />
-        </Row>
-        <Row label="输出价格">
-          <input name="priceOutput" type="number" min={0} step="0.000001" className={inputCls} />
-        </Row>
-        <Row label="缓存读取">
-          <input name="priceCacheRead" type="number" min={0} step="0.000001" className={inputCls} />
-        </Row>
-        <Row label="缓存写入">
-          <input name="priceCacheWrite" type="number" min={0} step="0.000001" className={inputCls} />
-        </Row>
-      </div>
-
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex items-center gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <button
           type="submit"
           disabled={pending}
@@ -174,6 +205,52 @@ export function ModelRequestForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-800">
+      <legend className="px-2 text-base font-semibold">{title}</legend>
+      <p className="mb-5 text-sm text-zinc-500">{description}</p>
+      {children}
+    </fieldset>
+  );
+}
+
+function CheckOption({ name, label }: { name: string; label: string }) {
+  return (
+    <label className="flex items-center gap-3 rounded-md border border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-800">
+      <input
+        type="checkbox"
+        name={name}
+        className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+      />
+      {label}
+    </label>
+  );
+}
+
+function PriceInput({ name, label }: { name: string; label: string }) {
+  return (
+    <Row label={label}>
+      <input
+        name={name}
+        type="number"
+        min={0}
+        step="0.000001"
+        className={inputCls}
+        inputMode="decimal"
+      />
+    </Row>
   );
 }
 

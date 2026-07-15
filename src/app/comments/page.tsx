@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -7,21 +8,34 @@ import { listCommentFeed, type CommentSort } from "@/lib/comments";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 20;
+
 export default async function CommentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ sort?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const sort: CommentSort = sp.sort === "hot" ? "hot" : "latest";
-  const comments = await listCommentFeed({ sort, limit: 50 });
+  const parsedPage = Number.parseInt(sp.page ?? "1", 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0
+    ? Math.min(parsedPage, 50_001)
+    : 1;
+  const offset = (page - 1) * PAGE_SIZE;
+  const { items: comments, hasMore } = await listCommentFeed({
+    sort,
+    limit: PAGE_SIZE,
+    offset,
+  });
+  const rangeStart = comments.length > 0 ? offset + 1 : 0;
+  const rangeEnd = offset + comments.length;
 
   return (
     <main className="flex flex-1 flex-col">
       <SiteHeader maxWidth="max-w-[96rem]" />
       <AnnouncementBanner />
 
-      <div className="mx-auto w-full max-w-[96rem] flex-1 px-6 py-8">
+      <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-zinc-500">
@@ -35,18 +49,26 @@ export default async function CommentsPage({
           </div>
 
           <div className="flex gap-1 rounded-lg border border-zinc-200 bg-white p-1 text-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <SortLink href="/comments" active={sort === "latest"}>
+            <SortLink href={buildCommentsHref("latest", 1)} active={sort === "latest"}>
               最新
             </SortLink>
-            <SortLink href="/comments?sort=hot" active={sort === "hot"}>
+            <SortLink href={buildCommentsHref("hot", 1)} active={sort === "hot"}>
               热度
             </SortLink>
           </div>
         </div>
 
+        <p className="mb-4 text-sm text-zinc-500">
+          {comments.length > 0
+            ? `第 ${page} 页，正在显示第 ${rangeStart}–${rangeEnd} 条评论`
+            : page > 1
+              ? `第 ${page} 页暂无评论`
+              : "当前没有可显示的评论"}
+        </p>
+
         {comments.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-300 px-6 py-16 text-center text-sm text-zinc-500 dark:border-zinc-700">
-            暂时还没有评论
+            {page > 1 ? "这一页没有评论，请返回上一页" : "暂时还没有评论"}
           </div>
         ) : (
           <ul className="space-y-4">
@@ -60,7 +82,7 @@ export default async function CommentsPage({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                        <span className="break-words font-medium text-zinc-900 [overflow-wrap:anywhere] dark:text-zinc-100">
                           {comment.author.username}
                         </span>
                         {comment.author.isAdmin && (
@@ -89,7 +111,7 @@ export default async function CommentsPage({
                     </div>
                   ) : (
                     <div
-                      className="markdown-body text-sm text-zinc-700 dark:text-zinc-300"
+                      className="markdown-body min-w-0 break-words text-sm text-zinc-700 [overflow-wrap:anywhere] dark:text-zinc-300"
                       dangerouslySetInnerHTML={{ __html: comment.contentHtml }}
                     />
                   )}
@@ -102,14 +124,14 @@ export default async function CommentsPage({
                         评论于：
                         <Link
                           href={`/models/${comment.model.slug}`}
-                          className="font-medium text-zinc-700 hover:text-blue-600 hover:underline dark:text-zinc-300 dark:hover:text-blue-400"
+                          className="break-words font-medium text-zinc-700 [overflow-wrap:anywhere] hover:text-blue-600 hover:underline dark:text-zinc-300 dark:hover:text-blue-400"
                         >
                           {comment.model.name}
                         </Link>
                         <span className="mx-1">·</span>
                         <Link
                           href={`/rankings/${comment.model.category.slug}`}
-                          className="hover:text-zinc-900 hover:underline dark:hover:text-zinc-100"
+                          className="break-words [overflow-wrap:anywhere] hover:text-zinc-900 hover:underline dark:hover:text-zinc-100"
                         >
                           {comment.model.category.name}
                         </Link>
@@ -127,11 +149,45 @@ export default async function CommentsPage({
             ))}
           </ul>
         )}
+
+        {(page > 1 || hasMore) && (
+          <nav className="mt-6 flex items-center justify-between gap-3" aria-label="评论分页">
+            {page > 1 ? (
+              <Link
+                href={buildCommentsHref(sort, page - 1)}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              >
+                ← 上一页
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-zinc-500">第 {page} 页</span>
+            {hasMore ? (
+              <Link
+                href={buildCommentsHref(sort, page + 1)}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              >
+                下一页 →
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
       </div>
 
       <SiteFooter />
     </main>
   );
+}
+
+function buildCommentsHref(sort: CommentSort, page: number) {
+  const params = new URLSearchParams();
+  if (sort === "hot") params.set("sort", "hot");
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return query ? `/comments?${query}` : "/comments";
 }
 
 function SortLink({
@@ -159,7 +215,6 @@ function SortLink({
 
 function Avatar({ src, name }: { src: string | null; name: string }) {
   if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
         src={src}

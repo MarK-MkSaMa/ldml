@@ -10,6 +10,8 @@ import { getModelByIdForAdmin } from "@/lib/admin-models";
 import { ModelForm } from "../model-form";
 import { updateModelAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditModelPage({
   params,
 }: {

@@ -52,7 +52,8 @@ export default async function AdminModelRequestsPage({
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">模型</th>
@@ -134,7 +135,8 @@ export default async function AdminModelRequestsPage({
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

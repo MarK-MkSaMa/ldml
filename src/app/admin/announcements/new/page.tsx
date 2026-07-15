@@ -7,7 +7,7 @@ import { createAnnouncementAction } from "../actions";
 
 export default function NewAnnouncementPage() {
   return (
-    <div>
+    <div className="max-w-4xl">
       <nav className="mb-4 text-sm text-zinc-500">
         <Link href="/admin/announcements" className="hover:text-zinc-900 dark:hover:text-zinc-100">
           ← 返回公告列表

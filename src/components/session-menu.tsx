@@ -5,6 +5,7 @@
  * 已登录：显示头像 + 用户名 + 登出按钮
  */
 import Link from "next/link";
+import { CircleUserRound } from "lucide-react";
 import { signOut } from "@/auth";
 import { getCurrentUserFresh } from "@/lib/current-user";
 
@@ -22,13 +23,14 @@ export async function SessionMenu() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1.5 sm:gap-3">
       <Link
         href="/profile"
-        className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="flex items-center gap-2 rounded-md px-1 py-1 text-sm transition-colors hover:bg-zinc-100 sm:px-1.5 dark:hover:bg-zinc-800"
         title="个人中心"
+        aria-label={`个人中心：${user.username}`}
       >
-        {user.avatarUrl && (
+        {user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={user.avatarUrl}
@@ -36,13 +38,15 @@ export async function SessionMenu() {
             className="h-7 w-7 rounded-full"
             referrerPolicy="no-referrer"
           />
+        ) : (
+          <CircleUserRound className="h-7 w-7 text-zinc-500" aria-hidden />
         )}
-        <span>{user.username}</span>
+        <span className="hidden sm:inline">{user.username}</span>
       </Link>
       {user.isAdmin && (
         <Link
           href="/admin"
-          className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
+          className="hidden rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 sm:inline-block dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60"
         >
           管理员
         </Link>

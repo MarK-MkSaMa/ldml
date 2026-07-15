@@ -8,6 +8,8 @@ import { categories } from "@/db/schema";
 import { ModelForm } from "../model-form";
 import { createModelAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewModelPage() {
   const categoryRows = await db
     .select()

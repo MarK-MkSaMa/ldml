@@ -3,8 +3,8 @@
 /**
  * 模型编辑表单
  */
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { suggestSlug } from "@/lib/slug";
 import { MODEL_STATUSES, type ModelStatus } from "@/lib/model-status";
 
@@ -79,252 +79,249 @@ export function ModelForm({
   const [slugTouched, setSlugTouched] = useState(!!initial?.slug);
 
   function update<K extends keyof ModelFormInitial>(key: K, value: ModelFormInitial[K]) {
-    setState((s) => ({ ...s, [key]: value }));
+    setState((current) => ({ ...current, [key]: value }));
   }
 
   return (
     <form
       action={action}
       onSubmit={() => setPending(true)}
-      className="space-y-5"
+      className="max-w-4xl space-y-6"
     >
-      <Row label="名称" required>
-        <input
-          name="name"
-          value={state.name}
-          onChange={(e) => {
-            const v = e.target.value;
-            update("name", v);
-            if (!slugTouched) update("slug", suggestSlug(v));
-          }}
-          required
-          maxLength={100}
-          className={inputCls}
-          placeholder="GPT-5"
-        />
-      </Row>
+      <FormSection
+        title="基本信息"
+        description="设置模型名称、分类和用于核验的来源信息。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="名称" required>
+            <input
+              name="name"
+              value={state.name}
+              onChange={(e) => {
+                const value = e.target.value;
+                update("name", value);
+                if (!slugTouched) update("slug", suggestSlug(value));
+              }}
+              required
+              maxLength={100}
+              className={inputCls}
+              placeholder="GPT-5"
+            />
+          </Row>
 
-      <Row label="slug" required hint="URL 唯一标识；只能小写字母、数字、连字符">
-        <input
-          name="slug"
-          value={state.slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            update("slug", e.target.value);
-          }}
-          required
-          maxLength={80}
-          pattern="[a-z0-9][a-z0-9-]*"
-          className={inputCls}
-          placeholder="openai-gpt-5"
-        />
-      </Row>
+          <Row label="slug" required hint="URL 唯一标识；只能使用小写字母、数字和连字符">
+            <input
+              name="slug"
+              value={state.slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                update("slug", e.target.value);
+              }}
+              required
+              maxLength={80}
+              pattern="[a-z0-9][a-z0-9-]*"
+              className={inputCls}
+              placeholder="openai-gpt-5"
+            />
+          </Row>
 
-      <Row label="分类" required>
-        <select
-          name="categoryId"
-          value={state.categoryId || ""}
-          onChange={(e) => update("categoryId", Number(e.target.value))}
-          required
-          className={inputCls}
-        >
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </Row>
+          <Row label="分类" required>
+            <select
+              name="categoryId"
+              value={state.categoryId || ""}
+              onChange={(e) => update("categoryId", Number(e.target.value))}
+              required
+              className={inputCls}
+            >
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </Row>
 
-      <Row label="来源 lab">
-        <input
-          name="lab"
-          value={state.lab}
-          onChange={(e) => update("lab", e.target.value)}
-          maxLength={80}
-          className={inputCls}
-          placeholder="OpenAI / Anthropic / Alibaba ..."
-        />
-      </Row>
+          <Row label="来源机构">
+            <input
+              name="lab"
+              value={state.lab}
+              onChange={(e) => update("lab", e.target.value)}
+              maxLength={80}
+              className={inputCls}
+              placeholder="OpenAI / Anthropic / Alibaba ..."
+            />
+          </Row>
 
-      <Row label="官网 / 文档">
-        <input
-          name="homepageUrl"
-          type="url"
-          value={state.homepageUrl}
-          onChange={(e) => update("homepageUrl", e.target.value)}
-          className={inputCls}
-          placeholder="https://..."
-        />
-      </Row>
+          <Row label="官网或文档">
+            <input
+              name="homepageUrl"
+              type="url"
+              value={state.homepageUrl}
+              onChange={(e) => update("homepageUrl", e.target.value)}
+              className={inputCls}
+              placeholder="https://..."
+            />
+          </Row>
 
-      <Row label="发布日期">
-        <input
-          name="releasedAt"
-          type="date"
-          value={state.releasedAt}
-          onChange={(e) => update("releasedAt", e.target.value)}
-          className={inputCls}
-        />
-      </Row>
+          <Row label="发布日期">
+            <input
+              name="releasedAt"
+              type="date"
+              value={state.releasedAt}
+              onChange={(e) => update("releasedAt", e.target.value)}
+              className={inputCls}
+            />
+          </Row>
+        </div>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="上下文 tokens">
-          <input
-            name="contextTokens"
-            type="number"
-            min={0}
-            value={state.contextTokens}
-            onChange={(e) => update("contextTokens", e.target.value)}
-            className={inputCls}
-            placeholder="128000"
-          />
-        </Row>
-        <Row label="最大输出 tokens">
-          <input
-            name="outputTokens"
-            type="number"
-            min={0}
-            value={state.outputTokens}
-            onChange={(e) => update("outputTokens", e.target.value)}
-            className={inputCls}
-            placeholder="16384"
-          />
-        </Row>
-      </div>
+      <FormSection
+        title="能力参数"
+        description="设置上下文限制、输入输出类型和功能支持情况。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="上下文 tokens">
+            <input
+              name="contextTokens"
+              type="number"
+              min={0}
+              value={state.contextTokens}
+              onChange={(e) => update("contextTokens", e.target.value)}
+              className={inputCls}
+              placeholder="128000"
+            />
+          </Row>
+          <Row label="最大输出 tokens">
+            <input
+              name="outputTokens"
+              type="number"
+              min={0}
+              value={state.outputTokens}
+              onChange={(e) => update("outputTokens", e.target.value)}
+              className={inputCls}
+              placeholder="16384"
+            />
+          </Row>
+          <Row label="输入类型" hint="使用英文逗号分隔，例如 text,image">
+            <input
+              name="inputModalities"
+              value={state.inputModalities}
+              onChange={(e) => update("inputModalities", e.target.value)}
+              className={inputCls}
+              placeholder="text,image"
+            />
+          </Row>
+          <Row label="输出类型" hint="使用英文逗号分隔，例如 text">
+            <input
+              name="outputModalities"
+              value={state.outputModalities}
+              onChange={(e) => update("outputModalities", e.target.value)}
+              className={inputCls}
+              placeholder="text"
+            />
+          </Row>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Row label="输入类型" hint="逗号分隔，例如 text,image">
-          <input
-            name="inputModalities"
-            value={state.inputModalities}
-            onChange={(e) => update("inputModalities", e.target.value)}
-            className={inputCls}
-            placeholder="text,image"
-          />
-        </Row>
-        <Row label="输出类型" hint="逗号分隔，例如 text">
-          <input
-            name="outputModalities"
-            value={state.outputModalities}
-            onChange={(e) => update("outputModalities", e.target.value)}
-            className={inputCls}
-            placeholder="text"
-          />
-        </Row>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <CheckOption
             name="supportsReasoning"
+            label="支持推理"
             checked={state.supportsReasoning}
-            onChange={(e) => update("supportsReasoning", e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            onChange={(checked) => update("supportsReasoning", checked)}
           />
-          支持推理
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+          <CheckOption
             name="supportsToolCall"
+            label="支持工具调用"
             checked={state.supportsToolCall}
-            onChange={(e) => update("supportsToolCall", e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            onChange={(checked) => update("supportsToolCall", checked)}
           />
-          支持工具调用
-        </label>
-      </div>
+        </div>
+      </FormSection>
 
-      <Row label="权重">
-        <select
-          name="openWeights"
-          value={state.openWeights}
-          onChange={(e) => update("openWeights", e.target.value as ModelFormInitial["openWeights"])}
-          className={inputCls}
-        >
-          <option value="unknown">未知</option>
-          <option value="true">开源权重</option>
-          <option value="false">闭源权重</option>
-        </select>
-      </Row>
+      <FormSection
+        title="权重信息"
+        description="记录模型权重是否公开；无法确认时保留为未知。"
+      >
+        <Row label="权重开放状态">
+          <select
+            name="openWeights"
+            value={state.openWeights}
+            onChange={(e) =>
+              update("openWeights", e.target.value as ModelFormInitial["openWeights"])
+            }
+            className={inputCls}
+          >
+            <option value="unknown">未知</option>
+            <option value="true">开源权重</option>
+            <option value="false">闭源权重</option>
+          </select>
+        </Row>
+      </FormSection>
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Row label="输入价格">
-          <input
+      <FormSection
+        title="价格信息"
+        description="请按站点约定单位填写，并在保存前核对来源。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <PriceInput
             name="priceInput"
-            type="number"
-            min={0}
-            step="0.000001"
+            label="输入价格"
             value={state.priceInput}
-            onChange={(e) => update("priceInput", e.target.value)}
-            className={inputCls}
+            onChange={(value) => update("priceInput", value)}
           />
-        </Row>
-        <Row label="输出价格">
-          <input
+          <PriceInput
             name="priceOutput"
-            type="number"
-            min={0}
-            step="0.000001"
+            label="输出价格"
             value={state.priceOutput}
-            onChange={(e) => update("priceOutput", e.target.value)}
-            className={inputCls}
+            onChange={(value) => update("priceOutput", value)}
           />
-        </Row>
-        <Row label="缓存读取">
-          <input
+          <PriceInput
             name="priceCacheRead"
-            type="number"
-            min={0}
-            step="0.000001"
+            label="缓存读取价格"
             value={state.priceCacheRead}
-            onChange={(e) => update("priceCacheRead", e.target.value)}
-            className={inputCls}
+            onChange={(value) => update("priceCacheRead", value)}
           />
-        </Row>
-        <Row label="缓存写入">
-          <input
+          <PriceInput
             name="priceCacheWrite"
-            type="number"
-            min={0}
-            step="0.000001"
+            label="缓存写入价格"
             value={state.priceCacheWrite}
-            onChange={(e) => update("priceCacheWrite", e.target.value)}
-            className={inputCls}
+            onChange={(value) => update("priceCacheWrite", value)}
           />
-        </Row>
-      </div>
+        </div>
+      </FormSection>
 
-      <Row label="状态" required>
-        <select
-          name="status"
-          value={state.status}
-          onChange={(e) => update("status", e.target.value as ModelStatus)}
-          required
-          className={inputCls}
-        >
-          {MODEL_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
-      </Row>
+      <FormSection
+        title="发布设置"
+        description="单独设置模型当前状态及观察区置顶展示。"
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="状态" required>
+            <select
+              name="status"
+              value={state.status}
+              onChange={(e) => update("status", e.target.value as ModelStatus)}
+              required
+              className={inputCls}
+            >
+              {MODEL_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {STATUS_LABEL[status]}
+                </option>
+              ))}
+            </select>
+          </Row>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="pinned"
-          checked={state.pinned}
-          onChange={(e) => update("pinned", e.target.checked)}
-          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
-        />
-        在观察区置顶
-      </label>
+          <CheckOption
+            name="pinned"
+            label="在观察区置顶"
+            description="仅影响观察区中的展示顺序。"
+            checked={state.pinned}
+            onChange={(checked) => update("pinned", checked)}
+          />
+        </div>
+      </FormSection>
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <button
           type="submit"
           disabled={pending}
@@ -340,6 +337,81 @@ export function ModelForm({
         </Link>
       </div>
     </form>
+  );
+}
+
+function FormSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <legend className="px-2 text-base font-semibold">{title}</legend>
+      <p className="mb-5 text-sm text-zinc-500">{description}</p>
+      {children}
+    </fieldset>
+  );
+}
+
+function CheckOption({
+  name,
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex min-h-10 items-start gap-3 rounded-md border border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-800">
+      <input
+        type="checkbox"
+        name={name}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+      />
+      <span>
+        <span className="block font-medium">{label}</span>
+        {description && <span className="mt-0.5 block text-xs text-zinc-500">{description}</span>}
+      </span>
+    </label>
+  );
+}
+
+function PriceInput({
+  name,
+  label,
+  value,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Row label={label}>
+      <input
+        name={name}
+        type="number"
+        min={0}
+        step="0.000001"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls}
+        inputMode="decimal"
+      />
+    </Row>
   );
 }
 
@@ -367,4 +439,4 @@ function Row({
 }
 
 const inputCls =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100";
+  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-100";

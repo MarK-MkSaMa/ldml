@@ -58,9 +58,9 @@ export default async function AdminModelsPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">模型管理</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <PromoteButton />
           <ModelsDevSyncButton />
           <Link
@@ -97,7 +97,8 @@ export default async function AdminModelsPage({
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
               <tr>
                 <th className="px-4 py-3 font-medium">名称</th>
@@ -153,7 +154,8 @@ export default async function AdminModelsPage({
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -175,9 +177,9 @@ function FilterPicker<T extends number | string | undefined>({
   buildUrl: (v: T) => string;
 }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className="text-zinc-500">{label}</span>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         {all.map((opt) => {
           const active = opt.id === current;
           return (

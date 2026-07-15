@@ -16,6 +16,7 @@ import {
   toggleAnnouncementPinned,
 } from "@/lib/announcements";
 import { requireAdminFresh } from "@/lib/current-user";
+import { renderMarkdown } from "@/lib/markdown";
 
 function parseInput(formData: FormData) {
   return {
@@ -23,6 +24,21 @@ function parseInput(formData: FormData) {
     content: String(formData.get("content") ?? ""),
     isActive: formData.get("isActive") === "on",
     isPinned: formData.get("isPinned") === "on",
+  };
+}
+
+/**
+ * 公告正文预览：复用正式发布时的 Markdown 渲染与清洗管线。
+ */
+export async function previewAnnouncementAction(content: string) {
+  await requireAdminFresh();
+  if (content.length > 5000) {
+    return { ok: false as const, message: "正文超出长度限制（最多 5000 字）" };
+  }
+
+  return {
+    ok: true as const,
+    html: content.trim() ? await renderMarkdown(content) : "",
   };
 }
 

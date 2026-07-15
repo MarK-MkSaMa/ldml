@@ -25,7 +25,7 @@ const FEATURES = [
     icon: FlaskConical,
     links: [
       { href: "/benchmarks", label: "基准排行榜" },
-      { href: "/benchmarks/questions", label: "公开题库" },
+      { href: "/benchmarks#questions", label: "公开题库" },
       { href: "/benchmarks/submit", label: "上传题目" },
     ],
   },
@@ -37,7 +37,7 @@ const FEATURES = [
     icon: ListChecks,
     links: [
       { href: "/subjective-tests", label: "投票活动" },
-      { href: "/subjective-tests", label: "Elo 排行榜" },
+      { href: "/subjective-tests#elo-ranking", label: "Elo 排行榜" },
     ],
   },
 ];
